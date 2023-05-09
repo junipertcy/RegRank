@@ -12,7 +12,7 @@ import scipy.sparse.linalg
 import warnings
 from scipy.sparse import SparseEfficiencyWarning
 
-warnings.simplefilter('ignore', SparseEfficiencyWarning)
+warnings.simplefilter("ignore", SparseEfficiencyWarning)
 
 
 class BaseModel:
@@ -38,9 +38,7 @@ class SpringRank:
         scaling_factor = 1 / (np.log(scale / (1 - scale)) / (2 * inverse_temperature))
         scaled_ranks = self.scale_ranks(ranks, scaling_factor)
 
-        info = {
-            "rank": scaled_ranks
-        }
+        info = {"rank": scaled_ranks}
         return info
 
     def fit(self, data):
@@ -48,12 +46,10 @@ class SpringRank:
             adj = gt.adjacency(data)
         else:
             raise NotImplementedError
-
+        print(f"bicgstab: adj = {adj.todense()[:5,:5]}")
         ranks = self.get_ranks(adj)
 
-        info = {
-            "rank": ranks
-        }
+        info = {"rank": ranks}
         return info
 
     # below came from Hunter's code
@@ -98,9 +94,7 @@ class SpringRank:
         k_out = np.array(A.sum(axis=1).transpose())
 
         # form the graph laplacian
-        operator = csr_matrix(
-            spdiags(k_out + k_in, 0, N, N) - A - A.transpose()
-        )
+        operator = csr_matrix(spdiags(k_out + k_in, 0, N, N) - A - A.transpose())
 
         # form the operator A (from Ax=b notation)
         # note that this is the operator in the paper, but augmented
@@ -114,8 +108,7 @@ class SpringRank:
 
         # perform the computations
         ranks = scipy.sparse.linalg.bicgstab(
-            scipy.sparse.csr_matrix(operator),
-            solution_vector
+            scipy.sparse.csr_matrix(operator), solution_vector
         )[0]
 
         return ranks[:-1]
@@ -137,6 +130,7 @@ class SpringRank:
         if alpha == 0:
             rank = self.csr_SpringRank(A)
         else:
+            print("Running bicgstab to solve Ax=b ...")
             N = A.shape[0]
             k_in = np.sum(A, 0)
             k_out = np.sum(A, 1)
@@ -145,8 +139,9 @@ class SpringRank:
             D1 = np.diag(k_out + k_in)
             B = k_out - k_in
             # print(B)
-            B = np.dot(B, np.ones([N, 1]))
+            B = B @ np.ones([N, 1])
             # print(B)
+            print(f"alpha = {alpha}")
             A = alpha * np.eye(N) + D1 - C
             A = scipy.sparse.csr_matrix(np.matrix(A))
             # print(f"shape of A: {A.shape}; shape of B: {B.shape};")
@@ -163,5 +158,8 @@ class SpringRank:
                 if A[i, j] == 0:
                     continue
                 else:
-                    x += (s[i] - s[j]) * (A[i, j] - (A[i, j] + A[j, i]) / (1 + np.exp(-2 * beta * (s[i] - s[j]))))
+                    x += (s[i] - s[j]) * (
+                        A[i, j]
+                        - (A[i, j] + A[j, i]) / (1 + np.exp(-2 * beta * (s[i] - s[j])))
+                    )
         return x
