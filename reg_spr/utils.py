@@ -11,6 +11,10 @@ from collections import Counter
 # from numpy.random import default_rng
 # import scipy.sparse
 
+def compute_spearman_correlation(g, s):
+    return 
+
+
 
 def render_ijwt(
     path="./etc/prestige_reinforcement/data/PhD Exchange Network Data/PhD_exchange.txt",

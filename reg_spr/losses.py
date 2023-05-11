@@ -55,14 +55,16 @@ def compute_cache_from_g(
         row_b += list(range(shape**2 - shape, shape**2))
         col_b += [0] * shape
         data_b += [0] * shape
-        B = csr_matrix((data, (row, col)), shape=(shape**2, shape), dtype=np.float)
-        b = csr_matrix((data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float)
+        B = csr_matrix((data, (row, col)), shape=(shape**2, shape), dtype=np.float64)
+        b = csr_matrix(
+            (data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float64
+        )
     else:
         B = csr_matrix(
-            (data, (row, col)), shape=(shape**2 - shape, shape), dtype=np.float
+            (data, (row, col)), shape=(shape**2 - shape, shape), dtype=np.float64
         )
         b = csr_matrix(
-            (data_b, (row_b, col_b)), shape=(shape**2 - shape, 1), dtype=np.float
+            (data_b, (row_b, col_b)), shape=(shape**2 - shape, 1), dtype=np.float64
         )
 
     if not sparse:
@@ -165,7 +167,10 @@ class sum_squared_loss(Loss):
         return 0.5 * cp.norm(self.B @ theta - self.b) ** 2
 
     def setup(self, data, alpha):
-        cache = compute_cache_from_g(data, alpha=alpha, sparse=1, lbd=1, ell=self.compute_ell)
+        # data is graph_tool.Graph()
+        cache = compute_cache_from_g(
+            data, alpha=alpha, sparse=1, lbd=1, ell=self.compute_ell
+        )
         self.B = cache["B"]
         self.b = cache["b"]
         self.ell = cache["ell"]
@@ -230,7 +235,8 @@ class sum_squared_loss_conj(Loss):
 
         term_1 = (
             0.5
-            * cp.norm(self.Bt_B_invSqrt @ (-self.ell.T @ theta + self.B.T @ self.b)) ** 2
+            * cp.norm(self.Bt_B_invSqrt @ (-self.ell.T @ theta + self.B.T @ self.b))
+            ** 2
         )
 
         term_2 = -0.5 * cp.norm(self.b.todense()) ** 2
@@ -250,7 +256,7 @@ class sum_squared_loss_conj(Loss):
 
     def dual2primal(self, v):
         d = self.Bt_B_inv @ (-self.ell.T @ v + self.B.T @ self.b)
-        return np.squeeze(d).tolist()[0]
+        return np.array(np.squeeze(d)).reshape(-1, 1)
 
     def predict(self):
         pass

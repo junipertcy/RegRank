@@ -40,7 +40,7 @@ class SmallGraph(Experiment):
 class PhDExchange(Experiment):
     def __init__(self):
         self.g = gt.Graph()
-
+        self.sslc = None
         # Basic stats
         self.num_classes = 0
         self.num_dual_vars = 0
@@ -130,8 +130,12 @@ class PhDExchange(Experiment):
             raise AttributeError("Only use either dual_v or primal_s.")
         elif dual_v is None and primal_s is None:
             raise AttributeError("You need some input data.")
-        elif dual_v:
-            output = sslc.dual2primal(xNew)  # TODO
+        elif dual_v is not None:
+            if self.sslc is None:
+                self.sslc = self._init_sslc()
+            # We take firstOrderMethods.py output directly
+            dual_v = np.array(dual_v).reshape(-1, 1)
+            output = self.sslc.dual2primal(dual_v)
         else:
             output = primal_s
         collection_by_annot = defaultdict(list)
@@ -140,18 +144,25 @@ class PhDExchange(Experiment):
         self.data_annot = collection_by_annot
         return collection_by_annot
 
-    def compute_Ls(self, primal_s):
+    def _init_sslc(self):
         sslc = sum_squared_loss_conj()
         sslc.setup(self.g, alpha=1)
+        return sslc
+
+    def compute_Ls(self, primal_s):
+        if self.sslc is None:
+            self.sslc = self._init_sslc()
 
         # TCY comment: this is almost the same as the firstOrder.py result
         # this data should be very sparse (mostly zero)
-        return sslc.ell @ primal_s.value
+        return self.sslc.ell @ primal_s.value
 
     def dual2primal(self, dual_v):
-        sslc = sum_squared_loss_conj()
-        sslc.setup(self.g, alpha=1)
-        return sslc.dual2primal(dual_v.value)
+        if self.sslc is None:
+            self.sslc = self._init_sslc()
+        if type(dual_v) is np.matrix:
+            return self.sslc.dual2primal(np.array(dual_v).reshape(-1, 1))
+        return self.sslc.dual2primal(dual_v.value)
 
     def compute_basic_stats(self, dual_v=None, primal_s=None):
         self.basic_stats["deviation_dict"] = dict()

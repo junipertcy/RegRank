@@ -25,3 +25,4 @@
 #### ESSENTIAL LIBRARIES FOR MAIN FUNCTIONALITY ####
 networkx>=2.8.8
 pyyaml
+pytest
