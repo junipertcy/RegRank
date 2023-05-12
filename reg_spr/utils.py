@@ -15,7 +15,24 @@ logger = getLogger(__name__)
 # import scipy.sparse
 
 
-def compute_cache_from_g(g, alpha, sparse=True, regularization=True, ell=True):
+def cast2sum_squares_form(g, alpha, regularization=True):
+    """
+    This is how we linearize the objective function:
+    B_ind  i  j
+    0      0  1
+    1      0  2
+    2      0  3
+    3      1  0
+    4      1  2
+    5      1  3
+    6      2  0
+    ...
+    11     3  2
+    12     0  0
+    13     1  1
+    14     2  2
+    15     3  3
+    """
     A = gt.adjacency(g)
     # print(f"our method: adj = {A.todense()[:5,:5]}")
     if A.shape[0] != A.shape[1]:
@@ -25,12 +42,8 @@ def compute_cache_from_g(g, alpha, sparse=True, regularization=True, ell=True):
             "Please make sure that A is of type `csr_matrix` or `csc_matrix` of scipy.sparse."
         )
     shape = A.shape[0]
-    row = []
-    col = []
-    data = []
-    row_b = []
-    col_b = []
-    data_b = []
+    row, col, data = [], [], []
+    row_b, col_b, data_b = [], [], []
     for ind in zip(*A.nonzero()):
         i, j = ind[0], ind[1]
         if i == j:
@@ -44,11 +57,7 @@ def compute_cache_from_g(g, alpha, sparse=True, regularization=True, ell=True):
             _row = i * (shape - 1) + j - 1
         row.append(_row)
         col.append(i)
-        data.append(-A[ind] ** 0.5)
-        # TODO: This should be right
-        # But it doesn't match the math?
-        # However, it is consistent with
-        # bicgstab result in the original paper
+        data.append(-A[ind] ** 0.5)  # TODO: check sign
         row.append(_row)
         col.append(j)
         data.append(A[ind] ** 0.5)
@@ -58,10 +67,10 @@ def compute_cache_from_g(g, alpha, sparse=True, regularization=True, ell=True):
         data_b.append(-A[ind] ** 0.5)
 
     if regularization:
-        row += list(range(shape**2 - shape, shape**2))
-        col += list(range(shape))
+        row += [_ for _ in range(shape**2 - shape, shape**2)]
+        col += [_ for _ in range(shape)]
         data += [alpha**0.5] * shape
-        row_b += list(range(shape**2 - shape, shape**2))
+        row_b += [_ for _ in range(shape**2 - shape, shape**2)]
         col_b += [0] * shape
         data_b += [0] * shape
         B = csr_matrix((data, (row, col)), shape=(shape**2, shape), dtype=np.float64)
@@ -76,7 +85,11 @@ def compute_cache_from_g(g, alpha, sparse=True, regularization=True, ell=True):
         b = csr_matrix(
             (data_b, (row_b, col_b)), shape=(shape**2 - shape, 1), dtype=np.float64
         )
+    return B, b
 
+
+def compute_cache_from_g(g, alpha, sparse=True, regularization=True, ell=True):
+    B, b = cast2sum_squares_form(g, alpha, regularization=regularization)
     if not sparse:
         B = B.todense()
         b = b.todense()

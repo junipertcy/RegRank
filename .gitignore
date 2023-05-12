@@ -2,7 +2,6 @@ env
 .eggs
 *.pyc
 dist
-etc/
 .vscode/
 
 .ipynb_checkpoints/
