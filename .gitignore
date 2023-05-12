@@ -3,7 +3,10 @@ env
 *.pyc
 dist
 .vscode/
-
+*.pdf
+*.nb
+*.ps
+*.ipynb
 .ipynb_checkpoints/
 .idea/
 # Byte-compiled / optimized / DLL files
