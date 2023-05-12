@@ -8,7 +8,7 @@ from math import comb
 from numpy.linalg import norm
 import graph_tool.all as gt
 import cvxpy as cp
-from reg_spr.utils import compute_cache_from_g
+from reg_sr.utils import compute_cache_from_g
 
 
 class Loss:

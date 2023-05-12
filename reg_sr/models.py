@@ -1,7 +1,7 @@
-import reg_spr.losses as losses
-import reg_spr.regularizers as regularizers
+import reg_sr.losses as losses
+import reg_sr.regularizers as regularizers
 import graph_tool.all as gt
-from reg_spr.fit import fit_base_model
+from reg_sr.fit import fit_base_model
 
 import numpy as np
 from numba import jit

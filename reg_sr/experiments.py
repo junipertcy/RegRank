@@ -13,7 +13,7 @@ from itertools import combinations
 import graph_tool.all as gt
 import numpy as np
 from math import comb
-from reg_spr.losses import *
+from reg_sr.losses import *
 
 
 class Experiment:

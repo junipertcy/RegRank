@@ -8,18 +8,18 @@ from numpy.random import default_rng
 
 from scipy.sparse.linalg import inv, LinearOperator, aslinearoperator, lsqr
 
-from reg_spr.utils import *
-from reg_spr.losses import *
-from reg_spr.regularizers import *
-from reg_spr.experiments import *
-from reg_spr.firstOrderMethods import (
+from reg_sr.utils import *
+from reg_sr.losses import *
+from reg_sr.regularizers import *
+from reg_sr.experiments import *
+from reg_sr.firstOrderMethods import (
     createTestProblem,
     gradientDescent,
     lassoSolver,
     runAllTestProblems,
 )
 
-from reg_spr.cvx import *
+from reg_sr.cvx import *
 
 # import gurobipy as gp
 # HOW TO SUPPRESS GUROBI OUTPUT (Set parameter Username)?
