@@ -6,14 +6,127 @@ from scipy.sparse.linalg import inv
 from itertools import combinations
 from math import comb
 from collections import Counter
+from scipy.linalg import svd
 
 
 # from numpy.random import default_rng
 # import scipy.sparse
 
-def compute_spearman_correlation(g, s):
-    return 
 
+def compute_cache_from_g(
+    g, alpha, sparse=True, regularization=True, lambd=None, ell=True
+):
+    A = gt.adjacency(g)
+    print(f"our method: adj = {A.todense()[:5,:5]}")
+    if A.shape[0] != A.shape[1]:
+        raise ValueError("Are you sure that A is symmetric?")
+    if type(A) not in [csr_matrix, csc_matrix]:
+        raise TypeError(
+            "Please make sure that A is of type `csr_matrix` or `csc_matrix` of scipy.sparse."
+        )
+    if regularization and lambd is None:
+        raise ValueError("Please assign the regularization strength (lambd).")
+    shape = A.shape[0]
+    row = []
+    col = []
+    data = []
+    row_b = []
+    col_b = []
+    data_b = []
+    for ind in zip(*A.nonzero()):
+        i, j = ind[0], ind[1]
+        if j <= i:  # TODO: double check if equality should be here??
+            _row = i * (shape - 1) + j
+        else:
+            _row = i * (shape - 1) + j - 1
+        row.append(_row)
+        row.append(_row)
+        col.append(i)
+        col.append(j)
+        data.append(A[ind] ** 0.5)
+        data.append(-A[ind] ** 0.5)
+
+        row_b.append(_row)
+        col_b.append(0)
+        data_b.append(+alpha * A[ind] ** 0.5)
+        # print(f"adding... {_row, i, A[ind] ** 0.5} & {_row, j, - A[ind] ** 0.5}")
+
+    if regularization:
+        row += list(range(shape**2 - shape, shape**2))
+        col += list(range(shape))
+        data += [lambd] * shape
+        row_b += list(range(shape**2 - shape, shape**2))
+        col_b += [0] * shape
+        data_b += [0] * shape
+        B = csr_matrix((data, (row, col)), shape=(shape**2, shape), dtype=np.float64)
+        b = csr_matrix(
+            (data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float64
+        )
+    else:
+        print("WARNING: no regularization is used. Are you sure?")
+        B = csr_matrix(
+            (data, (row, col)), shape=(shape**2 - shape, shape), dtype=np.float64
+        )
+        b = csr_matrix(
+            (data_b, (row_b, col_b)), shape=(shape**2 - shape, 1), dtype=np.float64
+        )
+
+    if not sparse:
+        B = B.todense()
+        b = b.todense()
+
+    if ell:
+        _ell = compute_ell(g)
+    else:
+        _ell = None
+
+    Bt_B_inv = compute_Bt_B_inv(B, sparse=0)
+
+    _, s, Vh = svd(B.todense(), full_matrices=False)
+    Bt_B_invSqrt = Vh.T @ np.diag(1 / s) @ Vh
+
+    return {
+        "B": B,
+        "b": b,
+        "ell": _ell,
+        "Bt_B_inv": Bt_B_inv,
+        "Bt_B_invSqrt": Bt_B_invSqrt,
+    }
+
+
+def compute_Bt_B_inv(B, sparse=True):
+    if not sparse:
+        B = B.todense()
+        return np.linalg.inv(np.dot(B.T, B))
+    return inv(np.dot(B.T, B))
+
+
+def grad_g_star(B, b, v):
+    return np.dot(compute_Bt_B_inv(B), v + np.dot(B.T, b))
+
+
+def compute_ell(g, arg="class"):
+    ctr_classes = Counter(g.vp[arg])
+    len_classes = len(ctr_classes)
+    # print(f"ctr_classes: {ctr_classes}")
+    comb_classes = combinations(ctr_classes, 2)
+    mb = list(g.vp[arg])
+    ell = np.zeros([comb(len_classes, 2), len(g.get_vertices())])
+
+    for idx, (i, j) in enumerate(comb_classes):
+        for vtx in g.vertices():
+            vtx = vtx.__int__()
+            if mb[vtx] == i:
+                ell[idx][vtx] = -ctr_classes[i] ** -1
+            elif mb[vtx] == j:
+                ell[idx][vtx] = ctr_classes[j] ** -1
+            else:
+                ell[idx][vtx] = 0
+    return ell
+
+
+def compute_spearman_correlation(g, s):
+    return
 
 
 def render_ijwt(

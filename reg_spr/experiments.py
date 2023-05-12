@@ -31,6 +31,8 @@ class SmallGraph(Experiment):
     def __init__(self):
         self.g = gt.Graph()
         self.g.add_edge(0, 1)
+        self.g.add_edge(1, 2)
+        self.g.add_edge(2, 3)
         pass
 
     def get_data(self):

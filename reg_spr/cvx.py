@@ -11,22 +11,27 @@ class same_mean_cvx(object):
     def __init__(self, g, L):
         self.g = g
         self.L = L
+
+        self.sslc = None
+        self.ssl = None
         pass
 
     # these 2 below are for dual formulations
     def loss_fn(self, dual_v):
-        sslc = sum_squared_loss_conj()
-        sslc.setup(self.g, alpha=1)
-        return sslc.evaluate_cvx(dual_v)
+        if self.sslc is None:
+            self.sslc = sum_squared_loss_conj()
+            self.sslc.setup(self.g, alpha=1)
+        return self.sslc.evaluate_cvx(dual_v)
 
     def objective_fn(self, dual_v):
         return self.loss_fn(dual_v)  # + lambd * regularizer(dual_v)
 
     # these three below are for primal formulations
     def loss_fn_primal(self, primal_s, alpha=1):
-        ssl = sum_squared_loss()
-        ssl.setup(self.g, alpha=1)
-        return ssl.evaluate_cvx(primal_s)
+        if self.ssl is None:
+            self.ssl = sum_squared_loss()
+            self.ssl.setup(self.g, alpha=1)
+        return self.ssl.evaluate_cvx(primal_s)
 
     def regularizer(self, primal_s):
         # ssl = sum_squared_loss()
@@ -40,10 +45,11 @@ class same_mean_cvx(object):
 class vanilla_cvx(object):
     def __init__(self, g, alpha=1):
         self.g = g
-        self.ssl = sum_squared_loss(compute_ell=False)
-        self.ssl.setup(self.g, alpha=1)
-
         self.alpha = alpha
+
+        self.ssl = sum_squared_loss(compute_ell=False)
+        self.ssl.setup(self.g, alpha=self.alpha)
+        
         pass
 
     def loss_fn_primal(self, primal_s):

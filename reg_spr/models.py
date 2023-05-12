@@ -46,7 +46,7 @@ class SpringRank:
             adj = gt.adjacency(data)
         else:
             raise NotImplementedError
-        print(f"bicgstab: adj = {adj.todense()[:5,:5]}")
+        # print(f"bicgstab: adj = {adj.todense()[:5,:5]}")
         ranks = self.get_ranks(adj)
 
         info = {"rank": ranks}
@@ -130,21 +130,25 @@ class SpringRank:
         if alpha == 0:
             rank = self.csr_SpringRank(A)
         else:
-            print("Running bicgstab to solve Ax=b ...")
+            if type(A) == np.ndarray:
+                A = scipy.sparse.csr_matrix(A)
+            # print("Running bicgstab to solve Ax=b ...")
+            # print("adj matrix A:\n", A.todense())
             N = A.shape[0]
-            k_in = np.sum(A, 0)
-            k_out = np.sum(A, 1)
+            k_in = scipy.sparse.csr_matrix.sum(A, 0)
+            k_out = scipy.sparse.csr_matrix.sum(A, 1).T
+
+            k_in = scipy.sparse.diags(np.array(k_in)[0])
+            k_out = scipy.sparse.diags(np.array(k_out)[0])
 
             C = A + A.T
-            D1 = np.diag(k_out + k_in)
+            D1 = k_in + k_out
+
             B = k_out - k_in
-            # print(B)
             B = B @ np.ones([N, 1])
-            # print(B)
-            print(f"alpha = {alpha}")
-            A = alpha * np.eye(N) + D1 - C
-            A = scipy.sparse.csr_matrix(np.matrix(A))
-            # print(f"shape of A: {A.shape}; shape of B: {B.shape};")
+
+            A = alpha * scipy.sparse.eye(N) + D1 - C
+
             rank = scipy.sparse.linalg.bicgstab(A, B)[0]
 
         return np.transpose(rank)
