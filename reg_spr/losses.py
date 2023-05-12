@@ -59,7 +59,7 @@ class sum_squared_loss(Loss):
     def setup(self, data, alpha):
         # data is graph_tool.Graph()
         cache = compute_cache_from_g(
-            data, alpha=alpha, sparse=1, lambd=1, ell=self.compute_ell
+            data, alpha=alpha, sparse=1, ell=self.compute_ell
         )
         self.B = cache["B"]
         self.b = cache["b"]
@@ -134,7 +134,7 @@ class sum_squared_loss_conj(Loss):
         # return sum((theta @ data["B"] - data["Y"]) ** 2)
 
     def setup(self, data, alpha):
-        cache = compute_cache_from_g(data, alpha=alpha, sparse=1, lambd=1)
+        cache = compute_cache_from_g(data, alpha=alpha, sparse=1)
         self.B = cache["B"]
         self.b = cache["b"]
         self.ell = cache["ell"]

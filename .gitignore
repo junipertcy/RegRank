@@ -3,7 +3,7 @@ env
 *.pyc
 dist
 etc/
-
+.vscode/
 
 .ipynb_checkpoints/
 .idea/

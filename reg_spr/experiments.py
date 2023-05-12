@@ -28,6 +28,10 @@ class Experiment:
 
 
 class SmallGraph(Experiment):
+    # This is a small graph for debugging
+    # This should generate a list of SpringRank (alpha=1) of
+    # [-0.57142857, -0.14285714, 0.14285714, 0.57142857]
+    # See https://github.com/LarremoreLab/SpringRank/pull/3
     def __init__(self):
         self.g = gt.Graph()
         self.g.add_edge(0, 1)
@@ -37,6 +41,22 @@ class SmallGraph(Experiment):
 
     def get_data(self):
         return self.g
+
+
+class RandomGraph(Experiment):
+    def __init__(self):
+        N = np.random.randint(10, 100)
+        self.g = gt.random_graph(N, self._deg_sample, directed=True)
+
+    def get_data(self):
+        return self.g
+    
+    @staticmethod
+    def _deg_sample():
+        if np.random.rand() > 0.5:
+            return np.random.poisson(4), np.random.poisson(4)
+        else:
+            return np.random.poisson(8), np.random.poisson(8)
 
 
 class PhDExchange(Experiment):

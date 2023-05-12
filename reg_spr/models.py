@@ -108,7 +108,7 @@ class SpringRank:
 
         # perform the computations
         ranks = scipy.sparse.linalg.bicgstab(
-            scipy.sparse.csr_matrix(operator), solution_vector
+            scipy.sparse.csr_matrix(operator), solution_vector, atol=1e-8
         )[0]
 
         return ranks[:-1]
@@ -149,7 +149,7 @@ class SpringRank:
 
             A = alpha * scipy.sparse.eye(N) + D1 - C
 
-            rank = scipy.sparse.linalg.bicgstab(A, B)[0]
+            rank = scipy.sparse.linalg.bicgstab(A, B, atol=1e-8)[0]
 
         return np.transpose(rank)
 

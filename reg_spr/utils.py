@@ -8,24 +8,22 @@ from math import comb
 from collections import Counter
 from scipy.linalg import svd
 
+from logging import getLogger
 
+logger = getLogger(__name__)
 # from numpy.random import default_rng
 # import scipy.sparse
 
 
-def compute_cache_from_g(
-    g, alpha, sparse=True, regularization=True, lambd=None, ell=True
-):
+def compute_cache_from_g(g, alpha, sparse=True, regularization=True, ell=True):
     A = gt.adjacency(g)
-    print(f"our method: adj = {A.todense()[:5,:5]}")
+    # print(f"our method: adj = {A.todense()[:5,:5]}")
     if A.shape[0] != A.shape[1]:
         raise ValueError("Are you sure that A is symmetric?")
     if type(A) not in [csr_matrix, csc_matrix]:
         raise TypeError(
             "Please make sure that A is of type `csr_matrix` or `csc_matrix` of scipy.sparse."
         )
-    if regularization and lambd is None:
-        raise ValueError("Please assign the regularization strength (lambd).")
     shape = A.shape[0]
     row = []
     col = []
@@ -35,26 +33,34 @@ def compute_cache_from_g(
     data_b = []
     for ind in zip(*A.nonzero()):
         i, j = ind[0], ind[1]
-        if j <= i:  # TODO: double check if equality should be here??
+        if i == j:
+            logger.warning(
+                "WARNING: self-loop detected in the adjacency matrix. Ignoring..."
+            )
+            continue
+        if j < i:
             _row = i * (shape - 1) + j
         else:
             _row = i * (shape - 1) + j - 1
         row.append(_row)
-        row.append(_row)
         col.append(i)
+        data.append(-A[ind] ** 0.5)
+        # TODO: This should be right
+        # But it doesn't match the math?
+        # However, it is consistent with
+        # bicgstab result in the original paper
+        row.append(_row)
         col.append(j)
         data.append(A[ind] ** 0.5)
-        data.append(-A[ind] ** 0.5)
 
         row_b.append(_row)
         col_b.append(0)
-        data_b.append(+alpha * A[ind] ** 0.5)
-        # print(f"adding... {_row, i, A[ind] ** 0.5} & {_row, j, - A[ind] ** 0.5}")
+        data_b.append(-A[ind] ** 0.5)
 
     if regularization:
         row += list(range(shape**2 - shape, shape**2))
         col += list(range(shape))
-        data += [lambd] * shape
+        data += [alpha**0.5] * shape
         row_b += list(range(shape**2 - shape, shape**2))
         col_b += [0] * shape
         data_b += [0] * shape
@@ -63,7 +69,7 @@ def compute_cache_from_g(
             (data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float64
         )
     else:
-        print("WARNING: no regularization is used. Are you sure?")
+        logger.warning("WARNING: no regularization is used. Are you sure?")
         B = csr_matrix(
             (data, (row, col)), shape=(shape**2 - shape, shape), dtype=np.float64
         )
