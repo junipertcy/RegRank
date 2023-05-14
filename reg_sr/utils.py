@@ -7,12 +7,103 @@ from itertools import combinations
 from math import comb
 from collections import Counter
 from scipy.linalg import svd
+import linecache
 
 from logging import getLogger
 
 logger = getLogger(__name__)
 # from numpy.random import default_rng
 # import scipy.sparse
+
+
+def cast2sum_squares_form_t(g, alpha, lambd, from_year=1960, to_year=1961, top_n=70):
+    if from_year >= to_year:
+        raise ValueError("from_year should be smaller than to_year")
+
+    row, col, data = [], [], []
+    row_b, col_b, data_b = [], [], []
+    T = to_year - from_year
+    for t in range(0, T):
+        u = filter_by_year(
+            g, from_year=from_year + t, to_year=from_year + t + 1, top_n=top_n
+        )
+        A = gt.adjacency(u)
+        shape = A.shape[0]
+
+        if A.shape[0] != A.shape[1]:
+            raise ValueError("Are you sure that A is asymmetric?")
+        if type(A) not in [csr_matrix, csc_matrix]:
+            raise TypeError(
+                "Please make sure that A is of type `csr_matrix` or `csc_matrix` of scipy.sparse."
+            )
+        for ind in zip(*A.nonzero()):
+            i, j = ind[0], ind[1]
+            if i == j:
+                continue
+            if j < i:
+                _row = i * (shape - 1) + j
+            else:
+                _row = i * (shape - 1) + j - 1
+            _row_t = _row + t * (shape**2)
+            i_t = i + t * shape
+            j_t = j + t * shape
+
+            row.append(_row_t)
+            col.append(i_t)
+            data.append(-A[ind] ** 0.5)  # TODO: check sign
+            row.append(_row_t)
+            col.append(j_t)
+            data.append(A[ind] ** 0.5)
+
+            # constant term
+            row_b.append(_row_t)
+            col_b.append(0)
+            data_b.append(-A[ind] ** 0.5)
+
+        row += [
+            _ for _ in range((t + 1) * (shape**2) - shape, (t + 1) * (shape**2))
+        ]
+        col += [_ for _ in range(t * shape, (t + 1) * shape)]
+        data += [alpha**0.5] * shape
+
+        # Note that you do not need to specify zeros, since the default value is zero.
+        # row_b += [
+        #     _ for _ in range((t + 1) * (shape**2) - shape, (t + 1) * (shape**2))
+        # ]
+        # col_b += [0] * shape
+        # data_b += [0] * shape
+
+        # regularize-over-time term
+        if t < T - 1:
+            row += [
+                _
+                for _ in range(
+                    T * shape**2 + t * shape, T * shape**2 + shape + t * shape
+                )
+            ]
+            col += [_ for _ in range(t * shape, (t + 1) * shape)]
+            data += [lambd**0.5] * shape
+
+            row += [
+                _
+                for _ in range(
+                    T * shape**2 + t * shape, T * shape**2 + shape + t * shape
+                )
+            ]
+            col += [_ for _ in range((t + 1) * shape, ((t + 1) + 1) * shape)]
+            data += [-(lambd**0.5)] * shape
+
+    B = csr_matrix(
+        (data, (row, col)),
+        shape=(T * shape**2 + (T - 1) * shape, T * shape),
+        dtype=np.float64,
+    )
+    b = csr_matrix(
+        (data_b, (row_b, col_b)),
+        shape=(T * shape**2 + (T - 1) * shape, 1),
+        dtype=np.float64,
+    )
+    return B, b
 
 
 def cast2sum_squares_form(g, alpha, regularization=True):
@@ -36,7 +127,7 @@ def cast2sum_squares_form(g, alpha, regularization=True):
     A = gt.adjacency(g)
     # print(f"our method: adj = {A.todense()[:5,:5]}")
     if A.shape[0] != A.shape[1]:
-        raise ValueError("Are you sure that A is symmetric?")
+        raise ValueError("Are you sure that A is asymmetric?")
     if type(A) not in [csr_matrix, csc_matrix]:
         raise TypeError(
             "Please make sure that A is of type `csr_matrix` or `csc_matrix` of scipy.sparse."
@@ -47,9 +138,9 @@ def cast2sum_squares_form(g, alpha, regularization=True):
     for ind in zip(*A.nonzero()):
         i, j = ind[0], ind[1]
         if i == j:
-            logger.warning(
-                "WARNING: self-loop detected in the adjacency matrix. Ignoring..."
-            )
+            # logger.warning(
+            #     "WARNING: self-loop detected in the adjacency matrix. Ignoring..."
+            # )
             continue
         if j < i:
             _row = i * (shape - 1) + j
@@ -70,9 +161,11 @@ def cast2sum_squares_form(g, alpha, regularization=True):
         row += [_ for _ in range(shape**2 - shape, shape**2)]
         col += [_ for _ in range(shape)]
         data += [alpha**0.5] * shape
-        row_b += [_ for _ in range(shape**2 - shape, shape**2)]
-        col_b += [0] * shape
-        data_b += [0] * shape
+
+        # Note that you do not need to specify zeros, since the default value is zero.
+        # row_b += [_ for _ in range(shape**2 - shape, shape**2)]
+        # col_b += [0] * shape
+        # data_b += [0] * shape
         B = csr_matrix((data, (row, col)), shape=(shape**2, shape), dtype=np.float64)
         b = csr_matrix(
             (data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float64
@@ -149,10 +242,12 @@ def compute_spearman_correlation(g, s):
 
 
 def render_ijwt(
-    path="./etc/prestige_reinforcement/data/PhD Exchange Network Data/PhD_exchange.txt",
+    path="./data/PhD Exchange Network Data/PhD_exchange.txt",
     delimiter=" ",
 ):
     g = gt.Graph()
+    vname = g.new_vp("string")
+    vindex = g.new_vp("int")
     eweight = g.new_ep("double")
     etime = g.new_ep("int")
 
@@ -189,6 +284,20 @@ def render_ijwt(
             )
     g.edge_properties["eweight"] = eweight
     g.edge_properties["etime"] = etime
+    id2name = {v: k for k, v in name2id.items()}
+
+    school_name = lambda n: linecache.getline(
+        "./data/PhD Exchange Network Data/school_names.txt", n
+    ).replace("\n", "")[:-1]
+    # print(school_name(165))  # >> University of Michigan
+    for vertex in g.vertices():
+        vname[vertex] = school_name(int(id2name[vertex]))
+        vindex[vertex] = vertex.__int__()
+
+    g.vertex_properties["vname"] = vname
+    g.vertex_properties["vindex"] = vindex
+    # print(name2id)
+
     return g
 
 
@@ -338,3 +447,23 @@ def implicit2explicit(f, a, m, n):
         A[:, i] = output
         e[i] = 0
     return A
+
+
+# for use of the PhD Exchange data set
+def filter_by_year(g, from_year=1946, to_year=2006, top_n=70):
+    if to_year <= from_year:
+        raise ValueError("to_year must be greater than from_year")
+
+    from_year_ind = from_year - 1946
+    to_year_ind = to_year - 1946
+
+    eb = g.ep["etime"]
+    cond_0 = eb.a >= from_year_ind
+    cond_1 = eb.a < to_year_ind  # notice that no equal sign here
+
+    cond = cond_0 & cond_1
+
+    # todo: check if "in" or "out" (I think it is "in")
+    node_indices = np.argsort(g.degree_property_map("in").a, axis=0)[-top_n:]
+    vcond = lambda v: g.vp["vindex"][v] in node_indices
+    return gt.GraphView(g, efilt=cond, vfilt=lambda v: vcond(v))
