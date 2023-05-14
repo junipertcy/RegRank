@@ -38,7 +38,7 @@ class same_mean_cvx(object):
         # ssl.setup(g, alpha=1)
         return cp.norm(self.L @ primal_s, 1)
 
-    def objective_fn_primal(self, primal_s, lambd=10):
+    def objective_fn_primal(self, primal_s, lambd=1):
         return self.loss_fn_primal(primal_s) + lambd * self.regularizer(primal_s)
 
 
@@ -49,8 +49,6 @@ class vanilla_cvx(object):
 
         self.ssl = sum_squared_loss(compute_ell=False)
         self.ssl.setup(self.g, alpha=self.alpha)
-        
-        pass
 
     def loss_fn_primal(self, primal_s):
         return self.ssl.evaluate_cvx(primal_s)
@@ -60,14 +58,16 @@ class vanilla_cvx(object):
 
 
 class huber_cvx(object):
-    def __init__(self):
-        pass
+    def __init__(self, g, alpha=1, M=1, incl_reg=False):
+        self.g = g
+        self.alpha = alpha
+        self.M = M
 
-    def loss_fn_primal(self, primal_s, alpha=1):
-        # It seems that there's no regularizer for the huber case
-        # its loss is huber.
-        pass
+        self.hl = huber_loss()
+        self.hl.setup(self.g, alpha=self.alpha, M=self.M, incl_reg=incl_reg)
 
-    def objective_fn_primal(self, primal_s, lambd=10):
-        pass
+    def loss_fn_primal(self, primal_s):
+        return self.hl.evaluate_cvx(primal_s)
 
+    def objective_fn_primal(self, primal_s):
+        return self.loss_fn_primal(primal_s)

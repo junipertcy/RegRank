@@ -171,7 +171,7 @@ def cast2sum_squares_form(g, alpha, regularization=True):
             (data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float64
         )
     else:
-        logger.warning("WARNING: no regularization is used. Are you sure?")
+        # logger.warning("WARNING: no regularization is used. Are you sure?")
         B = csr_matrix(
             (data, (row, col)), shape=(shape**2 - shape, shape), dtype=np.float64
         )

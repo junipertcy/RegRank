@@ -8,7 +8,7 @@ from math import comb
 from numpy.linalg import norm
 import graph_tool.all as gt
 import cvxpy as cp
-from reg_sr.utils import compute_cache_from_g
+from reg_sr.utils import compute_cache_from_g, cast2sum_squares_form
 
 
 class Loss:
@@ -37,6 +37,24 @@ class Loss:
         return -np.mean(self.logprob(data, G))
 
 
+class huber_loss(Loss):
+    """
+    TODO
+    """
+
+    def __init__(self):
+        self.B = None
+        self.b = None
+        self.M = 0
+
+    def evaluate_cvx(self, theta):
+        return 0.5 * cp.sum(cp.huber(self.B @ theta - self.b, self.M))
+
+    def setup(self, data, alpha, M, incl_reg):
+        self.M = M
+        self.B, self.b = cast2sum_squares_form(data, alpha=alpha, regularization=incl_reg)
+
+
 class sum_squared_loss(Loss):
     """
     f(s) = || B @ s - b ||_2^2
@@ -58,9 +76,7 @@ class sum_squared_loss(Loss):
 
     def setup(self, data, alpha):
         # data is graph_tool.Graph()
-        cache = compute_cache_from_g(
-            data, alpha=alpha, sparse=1, ell=self.compute_ell
-        )
+        cache = compute_cache_from_g(data, alpha=alpha, sparse=1, ell=self.compute_ell)
         self.B = cache["B"]
         self.b = cache["b"]
         self.ell = cache["ell"]
