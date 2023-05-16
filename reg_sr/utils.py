@@ -220,20 +220,19 @@ def grad_g_star(B, b, v):
 def compute_ell(g, arg="class"):
     ctr_classes = Counter(g.vp[arg])
     len_classes = len(ctr_classes)
-    # print(f"ctr_classes: {ctr_classes}")
     comb_classes = combinations(ctr_classes, 2)
     mb = list(g.vp[arg])
     ell = np.zeros([comb(len_classes, 2), len(g.get_vertices())])
-
     for idx, (i, j) in enumerate(comb_classes):
-        for vtx in g.vertices():
-            vtx = vtx.__int__()
-            if mb[vtx] == i:
-                ell[idx][vtx] = -ctr_classes[i] ** -1
-            elif mb[vtx] == j:
-                ell[idx][vtx] = ctr_classes[j] ** -1
+        for _, vtx in enumerate(g.vertices()):
+            # sometimes we feed g as a gt.GraphView
+            # in this case, vtx will return the (unfiltered) vertex id
+            if mb[_] == i:
+                ell[idx][_] = -ctr_classes[i] ** -1
+            elif mb[_] == j:
+                ell[idx][_] = ctr_classes[j] ** -1
             else:
-                ell[idx][vtx] = 0
+                ell[idx][_] = 0
     return ell
 
 
