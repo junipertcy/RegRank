@@ -7,6 +7,7 @@ from itertools import combinations
 from math import comb
 from collections import Counter
 from scipy.linalg import svd
+from scipy.sparse.linalg import svds
 import linecache
 
 from logging import getLogger
@@ -16,13 +17,36 @@ logger = getLogger(__name__)
 # import scipy.sparse
 
 
-def cast2sum_squares_form_t(g, alpha, lambd, from_year=1960, to_year=1961, top_n=70):
+def cast2sum_squares_form_t(
+    g, alpha, lambd, from_year=1960, to_year=1961, top_n=70, separate=False
+):
+    """Operator to linearize the sum of squares loss function.
+
+    Args:
+        g (_type_): _description_
+        alpha (_type_): _description_
+        lambd (_type_): _description_
+        from_year (int, optional): _description_. Defaults to 1960.
+        to_year (int, optional): _description_. Defaults to 1961.
+        top_n (int, optional): _description_. Defaults to 70.
+        separate (bool, optional): _description_. Defaults to False.
+
+    Raises:
+        ValueError: _description_
+        ValueError: _description_
+        TypeError: _description_
+
+    Returns:
+        _type_: _description_
+    """
     if from_year >= to_year:
         raise ValueError("from_year should be smaller than to_year")
 
     row, col, data = [], [], []
     row_b, col_b, data_b = [], [], []
-    T = to_year - from_year
+    if separate:
+        row_T, col_T, data_T = [], [], []
+    T = to_year - from_year + 1
     for t in range(0, T):
         u = filter_by_year(
             g, from_year=from_year + t, to_year=from_year + t + 1, top_n=top_n
@@ -75,35 +99,60 @@ def cast2sum_squares_form_t(g, alpha, lambd, from_year=1960, to_year=1961, top_n
 
         # regularize-over-time term
         if t < T - 1:
-            row += [
+            _row = [
                 _
                 for _ in range(
                     T * shape**2 + t * shape, T * shape**2 + shape + t * shape
                 )
             ]
-            col += [_ for _ in range(t * shape, (t + 1) * shape)]
-            data += [lambd**0.5] * shape
+            _col_t = [_ for _ in range(t * shape, (t + 1) * shape)]
+            _col_t_plus_1 = [_ for _ in range((t + 1) * shape, ((t + 1) + 1) * shape)]
+            if separate:
+                shift = T * shape**2
+                row_T += [(_ - shift) for _ in _row]
+                col_T += _col_t
+                data_T += [lambd**0.5] * shape
 
-            row += [
-                _
-                for _ in range(
-                    T * shape**2 + t * shape, T * shape**2 + shape + t * shape
-                )
-            ]
-            col += [_ for _ in range((t + 1) * shape, ((t + 1) + 1) * shape)]
-            data += [-(lambd**0.5)] * shape
+                row_T += [(_ - shift) for _ in _row]
+                col_T += _col_t_plus_1
+                data_T += [-(lambd**0.5)] * shape
+            else:
+                row += _row
+                col += _col_t
+                data += [lambd**0.5] * shape
 
-    B = csr_matrix(
-        (data, (row, col)),
-        shape=(T * shape**2 + (T - 1) * shape, T * shape),
-        dtype=np.float64,
-    )
-    b = csr_matrix(
-        (data_b, (row_b, col_b)),
-        shape=(T * shape**2 + (T - 1) * shape, 1),
-        dtype=np.float64,
-    )
-    return B, b
+                row += _row
+                col += _col_t_plus_1
+                data += [-(lambd**0.5)] * shape
+    if separate:
+        B = csr_matrix(
+            (data, (row, col)),
+            shape=(T * shape**2, T * shape),
+            dtype=np.float64,
+        )
+        b = csr_matrix(
+            (data_b, (row_b, col_b)),
+            shape=(T * shape**2, 1),
+            dtype=np.float64,
+        )
+        B_T = csr_matrix(
+            (data_T, (row_T, col_T)),
+            shape=((T - 1) * shape, T * shape),
+            dtype=np.float64,
+        )
+        return B, b, B_T
+    else:
+        B = csr_matrix(
+            (data, (row, col)),
+            shape=(T * shape**2 + (T - 1) * shape, T * shape),
+            dtype=np.float64,
+        )
+        b = csr_matrix(
+            (data_b, (row_b, col_b)),
+            shape=(T * shape**2 + (T - 1) * shape, 1),
+            dtype=np.float64,
+        )
+        return B, b, None
 
 
 def cast2sum_squares_form(g, alpha, regularization=True):
@@ -181,20 +230,71 @@ def cast2sum_squares_form(g, alpha, regularization=True):
     return B, b
 
 
-def compute_cache_from_g(g, alpha, sparse=True, regularization=True, ell=True):
-    B, b = cast2sum_squares_form(g, alpha, regularization=regularization)
-    if not sparse:
-        B = B.todense()
-        b = b.todense()
+def compute_cache_from_g(
+    g, alpha, sparse=True, regularization=True, ell=True, **kwargs
+):
+    """_summary_
 
-    if ell:
-        _ell = compute_ell(g)
+    Args:
+        g (_type_): _description_
+        alpha (_type_): _description_
+        sparse (bool, optional): _description_. Defaults to True.
+        regularization (bool, optional): _description_. Defaults to True.
+        ell (bool, optional): _description_. Defaults to True.
+        method (str, optional): _description_. Defaults to "annotated".
+
+    Returns:
+        _type_: _description_
+    """
+    kwargs = kwargs["kwargs"]
+    method = kwargs.get("method", "annotated")
+    if method == "annotated":
+        B, b = cast2sum_squares_form(g, alpha, regularization=regularization)
+        if not sparse:
+            B = B.todense()
+            b = b.todense()
+
+        if ell:
+            _ell = compute_ell(g)
+        else:
+            _ell = None
+    elif method == "timewise":
+        lambd = kwargs.get("lambd", 1)
+        from_year = kwargs.get("from_year", 1960)
+        to_year = kwargs.get("to_year", 1961)
+        top_n = kwargs.get("top_n", 70)
+        B, b, B_T = cast2sum_squares_form_t(
+            g,
+            alpha,
+            lambd=lambd,
+            from_year=from_year,
+            to_year=to_year,
+            top_n=top_n,
+            separate=True,
+        )
+
+        # for timewise setting, we always use sparse matrix
+        sparse = True
+
+        # if not sparse:
+        #     B = B.todense()
+        #     b = b.todense()
+        _ell = B_T
+        # if ell:
+        #     B_T = B_T.todense()
+        # else:
+        #     _ell = None
     else:
-        _ell = None
+        raise NotImplementedError(f"method {method} is not implemented.")
 
-    Bt_B_inv = compute_Bt_B_inv(B, sparse=0)
-
-    _, s, Vh = svd(B.todense(), full_matrices=False)
+    Bt_B_inv = compute_Bt_B_inv(B, sparse=sparse)
+    # _, s, Vh = svd(B.todense(), full_matrices=False)
+    if type(B) is not csr_matrix:
+        _, s, Vh = svd(B.todense(), full_matrices=False)
+    else:
+        _, s, Vh = svds(
+            B, k=min(B.shape) - 1, solver="arpack"
+        )  # implement svd for sparse matrix
     Bt_B_invSqrt = Vh.T @ np.diag(1 / s) @ Vh
 
     return {
@@ -209,8 +309,8 @@ def compute_cache_from_g(g, alpha, sparse=True, regularization=True, ell=True):
 def compute_Bt_B_inv(B, sparse=True):
     if not sparse:
         B = B.todense()
-        return np.linalg.inv(np.dot(B.T, B))
-    return inv(np.dot(B.T, B))
+        return np.linalg.inv(B.T @ B)
+    return inv(B.T @ B)
 
 
 def grad_g_star(B, b, v):

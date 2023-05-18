@@ -149,8 +149,8 @@ class sum_squared_loss_conj(Loss):
         return term_1 + term_2
         # return sum((theta @ data["B"] - data["Y"]) ** 2)
 
-    def setup(self, data, alpha):
-        cache = compute_cache_from_g(data, alpha=alpha, sparse=1)
+    def setup(self, data, alpha, **kwargs):
+        cache = compute_cache_from_g(data, alpha=alpha, sparse=1, kwargs=kwargs)
         self.B = cache["B"]
         self.b = cache["b"]
         self.ell = cache["ell"]
