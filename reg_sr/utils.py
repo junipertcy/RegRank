@@ -238,46 +238,8 @@ def cast2sum_squares_form(data, alpha, regularization=True):
         )
     return B, b
 
-
-def compute_cache_from_data(
-    data, alpha, sparse=True, regularization=True, ell=None, **kwargs
-):
-    """_summary_
-
-    Args:
-        data (_type_): _description_
-        alpha (_type_): _description_
-        sparse (bool, optional): _description_. Defaults to True.
-        regularization (bool, optional): _description_. Defaults to True.
-        ell (bool, optional): _description_. Defaults to True.
-        method (str, optional): _description_. Defaults to "annotated".
-
-    Returns:
-        _type_: _description_
-    """
-    try:
-        kwargs = kwargs["kwargs"]
-    except KeyError:
-        pass
-    method = kwargs.get("method", "annotated")
-    if type(data) is not gt.Graph and ell is None:
-        raise ValueError("Please supply ell!")
-    if method == "annotated":
-        B, b = cast2sum_squares_form(data, alpha, regularization=regularization)
-        if not sparse:
-            B = B.todense()
-            b = b.todense()
-
-        if not ell:
-            _ell = compute_ell(data)
-        else:
-            _ell = None
-    elif method == "timewise":
-        lambd = kwargs.get("lambd", 1)
-        from_year = kwargs.get("from_year", 1960)
-        to_year = kwargs.get("to_year", 1961)
-        top_n = kwargs.get("top_n", 70)
-        B, b, B_T = cast2sum_squares_form_t(
+def compute_cache_from_data_t(data, alpha=1, lambd=1, from_year=1960, to_year=1961, top_n=70):
+        B, b, _ell = cast2sum_squares_form_t(
             data,
             alpha,
             lambd=lambd,
@@ -290,27 +252,64 @@ def compute_cache_from_data(
         # for timewise setting, we always use sparse matrix
         sparse = True
 
-        # if not sparse:
-        #     B = B.todense()
-        #     b = b.todense()
-        _ell = B_T
-        # if ell:
-        #     B_T = B_T.todense()
-        # else:
-        #     _ell = None
-    else:
-        raise NotImplementedError(f"method {method} is not implemented.")
+        # somehow, sparse Bt_B_inv runs faster
+        Bt_B_inv = compute_Bt_B_inv(B, sparse=True)
+        # _, s, Vh = svd(B.todense(), full_matrices=False)
+        if type(B) is not csr_matrix:
+            _, s, Vh = svd(B.todense(), full_matrices=False)
+        else:
+            # this is much slower than the dense counterpart
+            _, s, Vh = svds(
+                B, k=min(B.shape) - 1, solver="arpack"
+            )  # implement svd for sparse matrix
+        Bt_B_invSqrt = Vh.T @ np.diag(1 / s) @ Vh
 
-    Bt_B_inv = compute_Bt_B_inv(B, sparse=sparse)
+        return {
+            "B": B,
+            "b": b,
+            "ell": _ell,
+            "Bt_B_inv": Bt_B_inv,
+            "Bt_B_invSqrt": Bt_B_invSqrt,
+        }
+
+
+
+def compute_cache_from_data(data, alpha, sparse=True, regularization=True):
+    """_summary_
+
+    Args:
+
+    data (_type_): _description_
+
+    alpha (_type_): _description_
+
+    sparse (bool, optional): _description_. Defaults to True.
+
+    regularization (bool, optional): _description_. Defaults to True.
+
+    Returns:
+
+    dictionary: _description_
+
+    """
+    B, b = cast2sum_squares_form(data, alpha, regularization=regularization)
+    if not sparse:
+        B = B.todense()
+        b = b.todense()
+
+    _ell = compute_ell(data)
+
+    # somehow, dense Bt_B_inv runs faster
+    Bt_B_inv = compute_Bt_B_inv(B, sparse=False)
+
     _, s, Vh = svd(B.todense(), full_matrices=False)
-    # if type(B) is not csr_matrix:
-    #     _, s, Vh = svd(B.todense(), full_matrices=False)
-    # else:
-    #     # this is much slower than the dense counterpart
-    #     _, s, Vh = svds(
-    #         B, k=min(B.shape) - 1, solver="arpack"
-    #     )  # implement svd for sparse matrix
     Bt_B_invSqrt = Vh.T @ np.diag(1 / s) @ Vh
+
+    # print("type(B):", type(B))
+    # print("type(b):", type(b))
+    # print("type(_ell):", type(_ell))
+    # print("type(Bt_B_inv):", type(Bt_B_inv))
+    # print("type(Bt_B_invSqrt):", type(Bt_B_invSqrt))
 
     return {
         "B": B,
@@ -319,7 +318,6 @@ def compute_cache_from_data(
         "Bt_B_inv": Bt_B_inv,
         "Bt_B_invSqrt": Bt_B_invSqrt,
     }
-
 
 def compute_Bt_B_inv(B, sparse=True):
     if not sparse:
@@ -335,7 +333,10 @@ def grad_g_star(B, b, v):
 def compute_ell(g, arg="class"):
     if type(g) is not gt.Graph:
         raise TypeError("g should be of type `graph_tool.Graph`.")
-    ctr_classes = Counter(g.vp[arg])
+    try:
+        ctr_classes = Counter(g.vp[arg])
+    except KeyError:
+        return None
     len_classes = len(ctr_classes)
     comb_classes = combinations(ctr_classes, 2)
     mb = list(g.vp[arg])

@@ -8,7 +8,11 @@ from math import comb
 from numpy.linalg import norm
 import graph_tool.all as gt
 import cvxpy as cp
-from reg_sr.utils import compute_cache_from_data, cast2sum_squares_form
+from reg_sr.utils import (
+    compute_cache_from_data,
+    cast2sum_squares_form,
+    compute_cache_from_data_t,
+)
 
 
 class Loss:
@@ -52,7 +56,9 @@ class huber_loss(Loss):
 
     def setup(self, data, alpha, M, incl_reg):
         self.M = M
-        self.B, self.b = cast2sum_squares_form(data, alpha=alpha, regularization=incl_reg)
+        self.B, self.b = cast2sum_squares_form(
+            data, alpha=alpha, regularization=incl_reg
+        )
 
 
 class sum_squared_loss(Loss):
@@ -75,7 +81,7 @@ class sum_squared_loss(Loss):
 
     def setup(self, data, alpha):
         # data is graph_tool.Graph()
-        cache = compute_cache_from_data(data, alpha=alpha, sparse=1)
+        cache = compute_cache_from_data(data, alpha=alpha, sparse=True)
         self.B = cache["B"]
         self.b = cache["b"]
         self.ell = cache["ell"]
@@ -140,7 +146,27 @@ class sum_squared_loss_conj(Loss):
         return term_1 + term_2
 
     def setup(self, data, alpha, **kwargs):
-        cache = compute_cache_from_data(data, alpha=alpha, sparse=1, kwargs=kwargs)
+        method = kwargs.get("method", "annotated")
+        if method == "annotated":
+            cache = compute_cache_from_data(data, alpha=alpha, sparse=True)
+        elif method == "time::fused-lasso":
+            lambd = kwargs.get("lambd", 1)
+            from_year = kwargs.get("from_year", 1960)
+            to_year = kwargs.get("to_year", 2001)
+            top_n = kwargs.get("top_n", 70)
+            cache = compute_cache_from_data_t(
+                data,
+                alpha=1,
+                lambd=lambd,
+                from_year=from_year,
+                to_year=to_year,
+                top_n=top_n,
+            )
+        elif method == "time::laplacian":
+            pass
+        else:
+            raise NotImplementedError("Method not implemented.")
+        
         self.B = cache["B"]
         self.b = cache["b"]
         self.ell = cache["ell"]

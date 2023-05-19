@@ -47,7 +47,7 @@ class vanilla_cvx(object):
         self.g = g
         self.alpha = alpha
 
-        self.ssl = sum_squared_loss(compute_ell=False)
+        self.ssl = sum_squared_loss()
         self.ssl.setup(self.g, alpha=self.alpha)
 
     def loss_fn_primal(self, primal_s):
