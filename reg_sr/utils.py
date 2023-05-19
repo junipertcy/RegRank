@@ -39,6 +39,8 @@ def cast2sum_squares_form_t(
     Returns:
         _type_: _description_
     """
+    if type(g) is not gt.Graph:
+        raise TypeError("g should be of type `graph_tool.Graph`.")
     if from_year >= to_year:
         raise ValueError("from_year should be smaller than to_year")
 
@@ -155,7 +157,7 @@ def cast2sum_squares_form_t(
         return B, b, None
 
 
-def cast2sum_squares_form(g, alpha, regularization=True):
+def cast2sum_squares_form(data, alpha, regularization=True):
     """
     This is how we linearize the objective function:
     B_ind  i  j
@@ -173,7 +175,14 @@ def cast2sum_squares_form(g, alpha, regularization=True):
     14     2  2
     15     3  3
     """
-    A = gt.adjacency(g)
+    if type(data) is gt.Graph:
+        A = gt.adjacency(data)
+    elif type(data) is csr_matrix:
+        A = data
+    else:
+        raise TypeError(
+            "Please make sure that data is of type `graph_tool.Graph` or `csr_matrix` of scipy.sparse."
+        )
     # print(f"our method: adj = {A.todense()[:5,:5]}")
     if A.shape[0] != A.shape[1]:
         raise ValueError("Are you sure that A is asymmetric?")
@@ -230,13 +239,13 @@ def cast2sum_squares_form(g, alpha, regularization=True):
     return B, b
 
 
-def compute_cache_from_g(
-    g, alpha, sparse=True, regularization=True, ell=True, **kwargs
+def compute_cache_from_data(
+    data, alpha, sparse=True, regularization=True, ell=None, **kwargs
 ):
     """_summary_
 
     Args:
-        g (_type_): _description_
+        data (_type_): _description_
         alpha (_type_): _description_
         sparse (bool, optional): _description_. Defaults to True.
         regularization (bool, optional): _description_. Defaults to True.
@@ -246,16 +255,21 @@ def compute_cache_from_g(
     Returns:
         _type_: _description_
     """
-    kwargs = kwargs["kwargs"]
+    try:
+        kwargs = kwargs["kwargs"]
+    except KeyError:
+        pass
     method = kwargs.get("method", "annotated")
+    if type(data) is not gt.Graph and ell is None:
+        raise ValueError("Please supply ell!")
     if method == "annotated":
-        B, b = cast2sum_squares_form(g, alpha, regularization=regularization)
+        B, b = cast2sum_squares_form(data, alpha, regularization=regularization)
         if not sparse:
             B = B.todense()
             b = b.todense()
 
-        if ell:
-            _ell = compute_ell(g)
+        if not ell:
+            _ell = compute_ell(data)
         else:
             _ell = None
     elif method == "timewise":
@@ -264,7 +278,7 @@ def compute_cache_from_g(
         to_year = kwargs.get("to_year", 1961)
         top_n = kwargs.get("top_n", 70)
         B, b, B_T = cast2sum_squares_form_t(
-            g,
+            data,
             alpha,
             lambd=lambd,
             from_year=from_year,
@@ -288,13 +302,14 @@ def compute_cache_from_g(
         raise NotImplementedError(f"method {method} is not implemented.")
 
     Bt_B_inv = compute_Bt_B_inv(B, sparse=sparse)
-    # _, s, Vh = svd(B.todense(), full_matrices=False)
-    if type(B) is not csr_matrix:
-        _, s, Vh = svd(B.todense(), full_matrices=False)
-    else:
-        _, s, Vh = svds(
-            B, k=min(B.shape) - 1, solver="arpack"
-        )  # implement svd for sparse matrix
+    _, s, Vh = svd(B.todense(), full_matrices=False)
+    # if type(B) is not csr_matrix:
+    #     _, s, Vh = svd(B.todense(), full_matrices=False)
+    # else:
+    #     # this is much slower than the dense counterpart
+    #     _, s, Vh = svds(
+    #         B, k=min(B.shape) - 1, solver="arpack"
+    #     )  # implement svd for sparse matrix
     Bt_B_invSqrt = Vh.T @ np.diag(1 / s) @ Vh
 
     return {
@@ -318,6 +333,8 @@ def grad_g_star(B, b, v):
 
 
 def compute_ell(g, arg="class"):
+    if type(g) is not gt.Graph:
+        raise TypeError("g should be of type `graph_tool.Graph`.")
     ctr_classes = Counter(g.vp[arg])
     len_classes = len(ctr_classes)
     comb_classes = combinations(ctr_classes, 2)
