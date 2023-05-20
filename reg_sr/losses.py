@@ -149,7 +149,7 @@ class sum_squared_loss_conj(Loss):
         method = kwargs.get("method", "annotated")
         if method == "annotated":
             cache = compute_cache_from_data(data, alpha=alpha, sparse=True)
-        elif method == "time::fused-lasso":
+        elif method == "time::l1":
             lambd = kwargs.get("lambd", 1)
             from_year = kwargs.get("from_year", 1960)
             to_year = kwargs.get("to_year", 2001)
@@ -162,8 +162,8 @@ class sum_squared_loss_conj(Loss):
                 to_year=to_year,
                 top_n=top_n,
             )
-        elif method == "time::laplacian":
-            pass
+        elif method == "time::l2":
+            raise NotImplementedError("We do not use first-order solver for this case.")
         else:
             raise NotImplementedError("Method not implemented.")
         
