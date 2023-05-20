@@ -1,3 +1,23 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Regularized-SpringRank -- regularized methods for efficient ranking in networks
+#
+# Copyright (C) 2023 Tzu-Chi Yen <tzuchi.yen@colorado.edu>
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU Lesser General Public License as published by the Free
+# Software Foundation; either version 3 of the License, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 from bson import ObjectId
 from pymongo import MongoClient
 
@@ -16,6 +36,8 @@ from math import comb
 from reg_sr.losses import *
 
 
+# TODO, see
+# https://graph-tool.skewed.de/static/doc/quickstart.html#sec-graph-filtering
 class Experiment:
     def __init__(self):
         pass
@@ -50,7 +72,7 @@ class RandomGraph(Experiment):
 
     def get_data(self):
         return self.g
-    
+
     @staticmethod
     def _deg_sample():
         if np.random.rand() > 0.5:

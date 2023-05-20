@@ -1,3 +1,23 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Regularized-SpringRank -- regularized methods for efficient ranking in networks
+#
+# Copyright (C) 2023 Tzu-Chi Yen <tzuchi.yen@colorado.edu>
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU Lesser General Public License as published by the Free
+# Software Foundation; either version 3 of the License, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 # from collections import defaultdict, Counter
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -64,7 +84,7 @@ xNew, data = gradientDescent(
     x0,
     prox=prox,
     prox_obj=prox_fcn,
-    stepsize=Lip_c ** -1,
+    stepsize=Lip_c**-1,
     printEvery=5000,
     maxIters=1e5,
     tol=1e-14,  # orig 1e-14
@@ -72,21 +92,25 @@ xNew, data = gradientDescent(
     saveHistory=True,
     linesearch=False,
     acceleration=False,
-    restart=50
+    restart=50,
 )
 
 ### CVXPY; PRIMAL ###
 primal_s = cp.Variable((g.num_vertices(), 1))
 problem = cp.Problem(cp.Minimize(sm_cvx.objective_fn_primal(primal_s, lambd=1)))
-problem.solve(solver=cp.GUROBI, verbose=False, reltol=1e-14, abstol=1e-14, max_iters=1e5)
+problem.solve(
+    solver=cp.GUROBI, verbose=False, reltol=1e-14, abstol=1e-14, max_iters=1e5
+)
 
 ### CVXPY; DUAL ###
 n = (pde.num_dual_vars, 1)
 tau = 1
 dual_v = cp.Variable(n)
-constraints = [ cp.norm( dual_v, np.inf ) <= tau ]
-problem = cp.Problem(cp.Minimize(sm_cvx.objective_fn(dual_v)), constraints )
-problem.solve(solver=cp.GUROBI, verbose=False, reltol=1e-14, abstol=1e-14, max_iters=1e5)
+constraints = [cp.norm(dual_v, np.inf) <= tau]
+problem = cp.Problem(cp.Minimize(sm_cvx.objective_fn(dual_v)), constraints)
+problem.solve(
+    solver=cp.GUROBI, verbose=False, reltol=1e-14, abstol=1e-14, max_iters=1e5
+)
 
 
 ### CODE FOR BENCHMARKING ###
@@ -94,7 +118,7 @@ ssl = sum_squared_loss()
 ssl.setup(g, alpha=1)
 
 tau = 1
-f_all_primal = lambda x : ssl.evaluate(x) + tau * np.linalg.norm(ssl.ell @ x, 1)
+f_all_primal = lambda x: ssl.evaluate(x) + tau * np.linalg.norm(ssl.ell @ x, 1)
 
 our_dual = f_all_primal(pde.dual2primal(xNew))
 cvx_dual = f_all_primal(pde.dual2primal(dual_v))
