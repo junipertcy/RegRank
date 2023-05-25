@@ -145,20 +145,17 @@ def crossValidation(G, folds, reps):
 
             TRAIN = gt.adjacency(G)
             
-            x, y_a, y_L = [], [], []
-            for _alpha in np.linspace(0.0001, 10, 5):
-                x.append(_alpha)
-                _sig_a, _sig_L = _crossValidation(G, 2, 1, _alpha)
-                y_a.append(-np.mean(_sig_a.reshape(1, -1)))
-                y_L.append(-np.mean(_sig_L.reshape(1, -1)))
-                print(_alpha, "-->", y_a, y_L)
-
-
-
-            f_a = interp1d(x, y_a, kind='linear', fill_value="extrapolate")
-            f_L = interp1d(x, y_L, kind='linear', fill_value="extrapolate")
-            cv_alpha = minimize(f_a, x0=0).x[0]
-
+            # x, y_a, y_L = [], [], []
+            # for _alpha in np.logspace(-1, 2, 10):
+            #     x.append(_alpha)
+            #     _sig_a, _sig_L = _crossValidation(G, 2, 1, _alpha)
+            #     y_a.append(-np.mean(_sig_a.reshape(1, -1)))
+            #     # y_L.append(-np.mean(_sig_L.reshape(1, -1)))
+            #     print(_alpha, "-->", y_a, y_L)
+            # f_a = interp1d(x, y_a, kind='linear', fill_value="extrapolate")
+            # # f_L = interp1d(x, y_L, kind='linear', fill_value="extrapolate")
+            # cv_alpha = minimize(f_a, x0=0).x[0]
+            cv_alpha = 0.01
 
             rsp = rSpringRank(method="vanilla")
             s0 = rsp.fit(G, alpha=cv_alpha)["primal"]
@@ -181,8 +178,20 @@ def crossValidation(G, folds, reps):
             ######################################################
 
             # # Train regularized SpringRank on the TRAIN set
+            # x, y_a, y_L = [], [], []
+            # for _alpha in np.logspace(-1, 2, 10):
+            #     x.append(_alpha)
+            #     _sig_a, _sig_L = _crossValidation2(G, 2, 1, _alpha)
+            #     y_a.append(-np.mean(_sig_a.reshape(1, -1)))
+            #     # y_L.append(-np.mean(_sig_L.reshape(1, -1)))
+            #     print(_alpha, "-->", y_a, y_L)
+            # f_a = interp1d(x, y_a, kind='linear', fill_value="extrapolate")
+            # # f_L = interp1d(x, y_L, kind='linear', fill_value="extrapolate")
+            # cv_alpha = minimize(f_a, x0=0).x[0]
+            cv_alpha = 0.01
+
             rsp = rSpringRank(method="annotated")
-            s1 = rsp.fit(G, alpha=cv_alpha, lambd=10)["primal"]
+            s1 = rsp.fit(G, alpha=cv_alpha, lambd=1)["primal"]
             # s2 = springRankFull(TRAIN, 2)
             bloc1 = betaLocal(TRAIN, s1)
             bglob1 = betaGlobal(TRAIN, s1)
@@ -253,6 +262,73 @@ def _crossValidation(G, folds, reps, alpha):
             sig_L[foldrep, 0] = -globalAccuracy(TEST, s0, bglob0) / numTestEdges
 
     return sig_a, sig_L
+
+
+
+
+
+def _crossValidation2(G, folds, reps, alpha):
+    A = gt.adjacency(G)
+    r, c, v = find(triu(A + A.T))
+    M = len(v)
+    foldSize = M // folds
+    sig_a = np.zeros((reps * folds, 1))
+    sig_L = np.zeros((reps * folds, 1))
+    np.random.seed(0)
+    for rep in range(reps):
+        idx = shuffle(np.arange(M))
+        fold = []
+        for f in range(folds - 1):
+            fold.append(idx[(f * foldSize) : ((f + 1) * foldSize)])
+        fold.append(idx[((folds - 1) * foldSize) :])
+        for f in range(folds):
+            print(
+                "training (+validating) progress: Rep {}/{}, Fold {}/{}.".format(
+                    rep + 1, reps, f + 1, folds
+                )
+            )
+            foldrep = f + rep * folds
+
+            test_i = r[fold[f]]
+            test_j = c[fold[f]]
+            test_ij = np.stack((test_i, test_j), axis=-1)
+            test_ji = np.stack((test_j, test_i), axis=-1)
+            train_mask = G.new_edge_property("bool", val=True)
+            validation_mask = G.new_edge_property("bool", val=False)
+            train_mask.a[test_ij] = False
+            train_mask.a[test_ji] = False
+            validation_mask.a[test_ij] = True
+            validation_mask.a[test_ji] = True
+
+            G.set_edge_filter(validation_mask)
+            TEST = gt.adjacency(G)
+
+            numTestEdges = G.num_edges()
+
+            G.set_edge_filter(train_mask)
+            TRAIN = gt.adjacency(G)
+
+            rsp = rSpringRank(method="annotated")
+            s0 = rsp.fit(G, alpha=alpha, lambd=1)["primal"]
+
+            bloc0 = betaLocal(TRAIN, s0)
+            bglob0 = betaGlobal(TRAIN, s0)
+
+            # SpringRank accuracies on TEST set
+            sig_a[foldrep, 0] = localAccuracy(TEST, s0, bloc0)
+            sig_L[foldrep, 0] = -globalAccuracy(TEST, s0, bglob0) / numTestEdges
+
+    return sig_a, sig_L
+
+
+
+
+
+
+
+
+
+
 
 
 def localAccuracy(A, s, b):

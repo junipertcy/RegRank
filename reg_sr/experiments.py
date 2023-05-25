@@ -185,10 +185,10 @@ class PhDExchange(Experiment):
         self.data_goi = collection_by_goi
         return collection_by_goi
 
-    def compute_basic_stats(self, dual_v=None, primal_s=None):
+    def compute_basic_stats(self, sslc, dual_v=None, primal_s=None):
         self.basic_stats["deviation_dict"] = dict()
         if self.data_goi is None:
-            self._compute_collection_by_goi(dual_v=dual_v, primal_s=primal_s)
+            self._compute_collection_by_goi(sslc, dual_v=dual_v, primal_s=primal_s)
 
         keys_comb = combinations(self.data_goi.keys(), 2)
         for key_pair in keys_comb:
@@ -304,10 +304,10 @@ class PeerInstitution(Experiment):
 
         return self.g
 
-    def compute_basic_stats(self, dual_v=None, primal_s=None):
+    def compute_basic_stats(self, sslc, dual_v=None, primal_s=None):
         self.basic_stats["deviation_dict"] = dict()
         if self.data_goi is None:
-            self._compute_collection_by_goi(dual_v=dual_v, primal_s=primal_s)
+            self._compute_collection_by_goi(sslc, dual_v=dual_v, primal_s=primal_s)
 
         keys_comb = combinations(self.data_goi.keys(), 2)
         for key_pair in keys_comb:

@@ -1,7 +1,7 @@
 import graph_tool.all as gt
 import numpy as np
 from numba import jit
-from scipy.sparse import csr_matrix, csc_matrix
+from scipy.sparse import csr_matrix, csc_matrix, issparse
 from scipy.sparse.linalg import inv
 from itertools import combinations
 from math import comb
@@ -274,7 +274,7 @@ def compute_cache_from_data_t(data, alpha=1, lambd=1, from_year=1960, to_year=19
 
 
 
-def compute_cache_from_data(data, alpha, sparse=True, regularization=True):
+def compute_cache_from_data(data, alpha, regularization=True):
     """_summary_
 
     Args:
@@ -283,8 +283,6 @@ def compute_cache_from_data(data, alpha, sparse=True, regularization=True):
 
     alpha (_type_): _description_
 
-    sparse (bool, optional): _description_. Defaults to True.
-
     regularization (bool, optional): _description_. Defaults to True.
 
     Returns:
@@ -292,34 +290,17 @@ def compute_cache_from_data(data, alpha, sparse=True, regularization=True):
     dictionary: _description_
 
     """
+    import datetime
     B, b = cast2sum_squares_form(data, alpha, regularization=regularization)
-    if not sparse:
-        B = B.todense()
-        b = b.todense()
-
     _ell = compute_ell(data)
-
-    # somehow, dense Bt_B_inv runs faster
-    Bt_B_inv = compute_Bt_B_inv(B, sparse=False)
-
-    # _, s, Vh = svd(B.todense(), full_matrices=False)
-
-    if type(B) is not csr_matrix:
-        _, s, Vh = svd(B.todense(), full_matrices=False)
+    Bt_B_inv = compute_Bt_B_inv(B, sparse=True)  # expensive step
+    if not issparse(B):  # we do not go this path
+        _, s, Vh = svd(B, full_matrices=False)
     else:
-        # this is much slower than the dense counterpart
         _, s, Vh = svds(
             B, k=min(B.shape) - 1, solver="arpack"
         )  # implement svd for sparse matrix
-
     Bt_B_invSqrt = Vh.T @ np.diag(1 / s) @ Vh
-
-    # print("type(B):", type(B))
-    # print("type(b):", type(b))
-    # print("type(_ell):", type(_ell))
-    # print("type(Bt_B_inv):", type(Bt_B_inv))
-    # print("type(Bt_B_invSqrt):", type(Bt_B_invSqrt))
-
     return {
         "B": B,
         "b": b,
@@ -330,7 +311,6 @@ def compute_cache_from_data(data, alpha, sparse=True, regularization=True):
 
 def compute_Bt_B_inv(B, sparse=True):
     if not sparse:
-        B = B.todense()
         return np.linalg.inv(B.T @ B)
     return inv(B.T @ B)
 

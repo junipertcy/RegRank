@@ -19,15 +19,9 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
-from scipy.sparse import csr_matrix, csc_matrix
-from scipy.sparse.linalg import inv
-
-from collections import Counter
-from itertools import combinations
-from math import comb
 from numpy.linalg import norm
-import graph_tool.all as gt
 import cvxpy as cp
+from numba import njit
 from reg_sr.utils import (
     compute_cache_from_data,
     cast2sum_squares_form,
@@ -101,7 +95,7 @@ class sum_squared_loss(Loss):
 
     def setup(self, data, alpha):
         # data is graph_tool.Graph()
-        cache = compute_cache_from_data(data, alpha=alpha, sparse=True)
+        cache = compute_cache_from_data(data, alpha=alpha)
         self.B = cache["B"]
         self.b = cache["b"]
         self.ell = cache["ell"]
@@ -187,7 +181,7 @@ class sum_squared_loss_conj(Loss):
     def setup(self, data, alpha, **kwargs):
         method = kwargs.get("method", "annotated")
         if method == "annotated":
-            cache = compute_cache_from_data(data, alpha=alpha, sparse=True)
+            cache = compute_cache_from_data(data, alpha=alpha)
         elif method == "time::l1":
             lambd = kwargs.get("lambd", 1)
             from_year = kwargs.get("from_year", 1960)
@@ -211,12 +205,16 @@ class sum_squared_loss_conj(Loss):
         self.ell = cache["ell"]  # sparse
         self.Bt_B_inv = cache["Bt_B_inv"]  # dense
         self.Bt_B_invSqrt = cache["Bt_B_invSqrt"]  # dense
-        
-        # derived ones (all dense)
+
+        # derived ones
         self.Bt_B_invSqrt_Btb = self.Bt_B_invSqrt @ self.B.T @ self.b
         self.Bt_B_invSqrt_ellt = self.Bt_B_invSqrt @ -self.ell.T
-        self.ell_BtB_inv_Bt_b = self.ell @ self.Bt_B_inv @ self.B.T @ self.b
-        self.ell_BtB_inb_ellt = self.ell @ self.Bt_B_inv @ -self.ell.T
+        self.ell_BtB_inv_Bt_b = self.ell @ self.Bt_B_inv @ self.B.T @ self.b  # sparse
+        self.ell_BtB_inb_ellt = self.ell @ self.Bt_B_inv @ -self.ell.T  # sparse
+        self.ell_BtB_inv_Bt_b = np.array(self.ell_BtB_inv_Bt_b.todense(), dtype=np.float64)
+        self.ell_BtB_inb_ellt = np.array(self.ell_BtB_inb_ellt.todense(), dtype=np.float64)
+
+
         self.term_2 = -0.5 * norm(self.b.todense()) ** 2
     
     def prox(self, theta):

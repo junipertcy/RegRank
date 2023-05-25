@@ -18,23 +18,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-from collections import defaultdict
-
-
-from scipy.sparse.linalg import inv, LinearOperator, lsqr
+from scipy.sparse.linalg import lsqr
 import numpy as np
-from scipy.sparse import csc_matrix
 
 from reg_sr.cvx import *
 from reg_sr.utils import *
 from reg_sr.losses import *
 from reg_sr.regularizers import *
-from reg_sr.experiments import *
 from reg_sr.firstOrderMethods import gradientDescent
-
-import reg_sr
 
 
 class rSpringRank(object):
@@ -92,22 +83,23 @@ class rSpringRank(object):
 
             # first order kwargs
             self.fo_setup["ArmijoLinesearch"] = kwargs.get("ArmijoLinesearch", True)
-            self.fo_setup["linesearch"] = kwargs.get("linesearch", False)
+            self.fo_setup["linesearch"] = kwargs.get(
+                "linesearch", False
+            )  # do not use True, still buggy
             self.fo_setup["acceleration"] = kwargs.get("acceleration", False)
-
-            x0 = np.random.rand(self.sslc.ell.shape[0], 1)
+            self.fo_setup["x0"] = kwargs.get("x0", np.random.rand(self.sslc.ell.shape[0], 1)).reshape(-1, 1)
 
             Lip_c = self.sslc.find_Lipschitz_constant()
             dual, _ = gradientDescent(
                 self.fo_setup["f"],
                 self.fo_setup["grad"],
-                x0,
+                self.fo_setup["x0"],
                 prox=self.fo_setup["prox"],
                 prox_obj=self.fo_setup["prox_fcn"],
                 stepsize=Lip_c**-1,
                 printEvery=5000,
-                maxIters=1e5,
-                tol=1e-16,  # orig 1e-14
+                maxIters=1e6,
+                tol=1e-14,  # orig 1e-14
                 # errorFunction=errFcn,
                 saveHistory=True,
                 linesearch=self.fo_setup["linesearch"],
@@ -140,14 +132,19 @@ class rSpringRank(object):
             self.fo_setup["grad"] = lambda x: self.sslc.prox(x)
             self.fo_setup["prox"] = lambda x, t: same_mean_reg(tau=1).prox(x, t)
             self.fo_setup["prox_fcn"] = lambda x: same_mean_reg(tau=1).evaluate(x)
-
-            x0 = np.random.rand(self.sslc.ell.shape[0], 1)
+            # first order kwargs
+            self.fo_setup["ArmijoLinesearch"] = kwargs.get("ArmijoLinesearch", True)
+            self.fo_setup["linesearch"] = kwargs.get(
+                "linesearch", False
+            )  # do not use True, still buggy
+            self.fo_setup["acceleration"] = kwargs.get("acceleration", False)
+            self.fo_setup["x0"] = kwargs.get("x0", np.random.rand(self.sslc.ell.shape[0], 1)).reshape(-1, 1)
 
             Lip_c = self.sslc.find_Lipschitz_constant()
             dual_time, _ = gradientDescent(
                 self.fo_setup["f"],
                 self.fo_setup["grad"],
-                x0,
+                self.fo_setup["x0"],
                 prox=self.fo_setup["prox"],
                 prox_obj=self.fo_setup["prox_fcn"],
                 stepsize=Lip_c**-1,
@@ -156,8 +153,9 @@ class rSpringRank(object):
                 tol=1e-14,  # orig 1e-14
                 # errorFunction=errFcn,
                 saveHistory=True,
-                linesearch=False,
-                acceleration=False,
+                linesearch=self.fo_setup["linesearch"],
+                ArmijoLinesearch=self.fo_setup["ArmijoLinesearch"],
+                acceleration=self.fo_setup["acceleration"],
                 restart=50,
             )
             primal_time = self.sslc.dual2primal(dual_time)
