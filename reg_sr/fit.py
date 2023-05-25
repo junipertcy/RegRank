@@ -42,9 +42,12 @@ class rSpringRank(object):
         self,
         method="vanilla",
     ):
+        self.alpha = 0
+        self.lambd = 0
         self.method = method
-        self.fo_setup = dict()
         self.result = dict()
+        self.sslc = None
+        self.fo_setup = dict()
         self.result["primal"] = None
         self.result["dual"] = None
         self.result["timewise"] = None
@@ -53,8 +56,10 @@ class rSpringRank(object):
     # *args stand for other regularization parameters
     # **kwargs stand for other parameters (required by solver, for filtering data, etc)
     def fit(self, data, alpha=1, **kwargs):
+        self.alpha = alpha
+        self.lambd = kwargs.get("lambd", 1)
         if self.method == "vanilla":
-            v_cvx = vanilla_cvx(data, alpha=alpha)
+            v_cvx = vanilla_cvx(data, alpha=self.alpha)
             primal_s = cp.Variable((data.num_vertices(), 1))
             problem = cp.Problem(
                 cp.Minimize(v_cvx.objective_fn_primal(primal_s))
@@ -64,7 +69,7 @@ class rSpringRank(object):
                 verbose=False,
                 reltol=1e-13,
                 abstol=1e-13,
-                max_iters=100000,
+                max_iters=1e5,
             )
             primal = primal_s.value.reshape(
                 -1,
@@ -74,16 +79,25 @@ class rSpringRank(object):
         elif self.method == "annotated":
             # In this case, we use the dual-based proximal gradient descent algorithm
             # to solve the problem.
-            sslc = sum_squared_loss_conj()
-            sslc.setup(data, alpha=alpha)
-            self.fo_setup["f"] = lambda x: sslc.evaluate(x)
-            self.fo_setup["grad"] = lambda x: sslc.prox(x)
-            self.fo_setup["prox"] = lambda x, t: same_mean_reg(tau=1).prox(x, t)
-            self.fo_setup["prox_fcn"] = lambda x: same_mean_reg(tau=1).evaluate(x)
+            self.sslc = sum_squared_loss_conj()
+            self.sslc.setup(data, alpha=self.alpha)
+            self.fo_setup["f"] = lambda x: self.sslc.evaluate(x)
+            self.fo_setup["grad"] = lambda x: self.sslc.prox(x)
+            self.fo_setup["prox"] = lambda x, t: same_mean_reg(tau=self.lambd).prox(
+                x, t
+            )
+            self.fo_setup["prox_fcn"] = lambda x: same_mean_reg(
+                tau=self.lambd
+            ).evaluate(x)
 
-            x0 = np.random.rand(sslc.ell.shape[0], 1)
+            # first order kwargs
+            self.fo_setup["ArmijoLinesearch"] = kwargs.get("ArmijoLinesearch", True)
+            self.fo_setup["linesearch"] = kwargs.get("linesearch", False)
+            self.fo_setup["acceleration"] = kwargs.get("acceleration", False)
 
-            Lip_c = sslc.find_Lipschitz_constant()
+            x0 = np.random.rand(self.sslc.ell.shape[0], 1)
+
+            Lip_c = self.sslc.find_Lipschitz_constant()
             dual, _ = gradientDescent(
                 self.fo_setup["f"],
                 self.fo_setup["grad"],
@@ -96,12 +110,13 @@ class rSpringRank(object):
                 tol=1e-16,  # orig 1e-14
                 # errorFunction=errFcn,
                 saveHistory=True,
-                linesearch=False,
-                acceleration=False,
+                linesearch=self.fo_setup["linesearch"],
+                ArmijoLinesearch=self.fo_setup["ArmijoLinesearch"],
+                acceleration=self.fo_setup["acceleration"],
                 restart=50,
             )
             self.result["dual"] = np.array(dual).reshape(1, -1)[0]
-            self.result["primal"] = sslc.dual2primal(dual).reshape(1, -1)[0]
+            self.result["primal"] = self.sslc.dual2primal(dual).reshape(1, -1)[0]
         elif self.method == "time::l1":
             # In this case, we cast to sum-of-squares form
             # and use the dual-based proximal gradient descent algorithm
@@ -109,27 +124,26 @@ class rSpringRank(object):
             from_year = kwargs.get("from_year", 1960)
             to_year = kwargs.get("to_year", 2001)
             top_n = kwargs.get("top_n", 70)
-            lambd = kwargs.get("lambd", 1)
 
-            sslc = sum_squared_loss_conj()
-            sslc.setup(
+            self.sslc = sum_squared_loss_conj()
+            self.sslc.setup(
                 data,
-                alpha=alpha,
-                lambd=lambd,
+                alpha=self.alpha,
+                lambd=self.lambd,
                 from_year=from_year,
                 to_year=to_year,
                 top_n=top_n,
                 method="time::l1",
             )
 
-            self.fo_setup["f"] = lambda x: sslc.evaluate(x)
-            self.fo_setup["grad"] = lambda x: sslc.prox(x)
+            self.fo_setup["f"] = lambda x: self.sslc.evaluate(x)
+            self.fo_setup["grad"] = lambda x: self.sslc.prox(x)
             self.fo_setup["prox"] = lambda x, t: same_mean_reg(tau=1).prox(x, t)
             self.fo_setup["prox_fcn"] = lambda x: same_mean_reg(tau=1).evaluate(x)
 
-            x0 = np.random.rand(sslc.ell.shape[0], 1)
+            x0 = np.random.rand(self.sslc.ell.shape[0], 1)
 
-            Lip_c = sslc.find_Lipschitz_constant()
+            Lip_c = self.sslc.find_Lipschitz_constant()
             dual_time, _ = gradientDescent(
                 self.fo_setup["f"],
                 self.fo_setup["grad"],
@@ -146,7 +160,7 @@ class rSpringRank(object):
                 acceleration=False,
                 restart=50,
             )
-            primal_time = sslc.dual2primal(dual_time)
+            primal_time = self.sslc.dual2primal(dual_time)
             self.result["timewise"] = primal_time.reshape(-1, top_n)
         elif self.method == "time::l2":
             # In this case, we cast to sum-of-squares form
@@ -154,11 +168,11 @@ class rSpringRank(object):
             from_year = kwargs.get("from_year", 1960)
             to_year = kwargs.get("to_year", 2001)
             top_n = kwargs.get("top_n", 70)
-            lambd = kwargs.get("lambd", 1)
+
             B, b, _ = cast2sum_squares_form_t(
                 data,
-                alpha=alpha,
-                lambd=lambd,
+                alpha=self.alpha,
+                lambd=self.lambd,
                 from_year=from_year,
                 to_year=to_year,
                 top_n=top_n,

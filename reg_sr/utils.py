@@ -302,7 +302,16 @@ def compute_cache_from_data(data, alpha, sparse=True, regularization=True):
     # somehow, dense Bt_B_inv runs faster
     Bt_B_inv = compute_Bt_B_inv(B, sparse=False)
 
-    _, s, Vh = svd(B.todense(), full_matrices=False)
+    # _, s, Vh = svd(B.todense(), full_matrices=False)
+
+    if type(B) is not csr_matrix:
+        _, s, Vh = svd(B.todense(), full_matrices=False)
+    else:
+        # this is much slower than the dense counterpart
+        _, s, Vh = svds(
+            B, k=min(B.shape) - 1, solver="arpack"
+        )  # implement svd for sparse matrix
+
     Bt_B_invSqrt = Vh.T @ np.diag(1 / s) @ Vh
 
     # print("type(B):", type(B))
@@ -330,27 +339,41 @@ def grad_g_star(B, b, v):
     return np.dot(compute_Bt_B_inv(B), v + np.dot(B.T, b))
 
 
-def compute_ell(g, arg="class"):
+def compute_ell(g, sparse=True):
     if type(g) is not gt.Graph:
         raise TypeError("g should be of type `graph_tool.Graph`.")
     try:
-        ctr_classes = Counter(g.vp[arg])
+        ctr_classes = Counter(g.vp["goi"])
     except KeyError:
         return None
     len_classes = len(ctr_classes)
     comb_classes = combinations(ctr_classes, 2)
-    mb = list(g.vp[arg])
-    ell = np.zeros([comb(len_classes, 2), len(g.get_vertices())])
+    mb = list(g.vp["goi"])
+
+    if sparse:
+        row, col, data = [], [], []
+    else:
+        ell = np.zeros([comb(len_classes, 2), len(g.get_vertices())])
     for idx, (i, j) in enumerate(comb_classes):
         for _, vtx in enumerate(g.vertices()):
             # sometimes we feed g as a gt.GraphView
             # in this case, vtx will return the (unfiltered) vertex id
             if mb[_] == i:
-                ell[idx][_] = -ctr_classes[i] ** -1
+                if sparse:
+                    row.append(idx)
+                    col.append(_)
+                    data.append(-ctr_classes[i] ** -1)
+                else:
+                    ell[idx][_] = -ctr_classes[i] ** -1
             elif mb[_] == j:
-                ell[idx][_] = ctr_classes[j] ** -1
-            else:
-                ell[idx][_] = 0
+                if sparse:
+                    row.append(idx)
+                    col.append(_)
+                    data.append(ctr_classes[j] ** -1)
+                else:
+                    ell[idx][_] = ctr_classes[j] ** -1
+    if sparse:
+        ell = csr_matrix((data, (row, col)), shape=(comb(len_classes, 2), len(g.get_vertices())))
     return ell
 
 

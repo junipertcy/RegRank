@@ -54,9 +54,9 @@ from cvx import *
 
 
 pde = PhDExchange()
-g = pde.get_data(annot="c18basic")
-# g = pde.get_data(annot="sector")
-# g = pde.get_data(annot="stabbr")
+g = pde.get_data(goi="c18basic")
+# g = pde.get_data(goi="sector")
+# g = pde.get_data(goi="stabbr")
 
 L = compute_ell(g)
 sm_cvx = same_mean_cvx(g, L)

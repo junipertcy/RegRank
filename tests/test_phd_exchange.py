@@ -31,16 +31,16 @@ from reg_sr.cvx import *
 #     m = gp.Model()
 #     m.Params.LogToConsole = 0
 
-# g = pde.get_data(annot="sector")
-# g = pde.get_data(annot="stabbr")
+# g = pde.get_data(goi="sector")
+# g = pde.get_data(goi="stabbr")
 
-def compute(annot):
+def compute(goi):
     pde = PhDExchange()
-    g = pde.get_data(annot=annot)
+    g = pde.get_data(goi=goi)
     L = compute_ell(g)
     sm_cvx = same_mean_cvx(g, L)
 
-    num_classes = len(set(np.array(list(g.vp["class"]))))
+    num_classes = len(set(np.array(list(g.vp["goi"]))))
     num_pairs_classes = comb(num_classes, 2)
 
 
@@ -94,9 +94,12 @@ def compute(annot):
 
     tau = 1
     f_all_primal = lambda x : ssl.evaluate(x) + tau * np.linalg.norm(ssl.ell @ x, 1)
-
-    our_dual = f_all_primal(pde.dual2primal(xNew))
-    cvx_dual = f_all_primal(pde.dual2primal(dual_v))
+    
+    xNew = np.array(xNew).reshape(-1, 1)
+    dual_v = np.array(dual_v.value).reshape(-1, 1)
+    
+    our_dual = f_all_primal(sslc.dual2primal(xNew))
+    cvx_dual = f_all_primal(sslc.dual2primal(dual_v))
     cvx_prim = f_all_primal(primal_s.value.reshape(1, -1).T)
     return our_dual, cvx_dual, cvx_prim
 

@@ -141,19 +141,38 @@ class sum_squared_loss_conj(Loss):
         self.Bt_B_inv = None
         self.Bt_B_invSqrt = None
 
-    def find_Lipschitz_constant(self):
-        L = norm(self.Bt_B_invSqrt @ self.ell.T, ord=2) ** 2
+        # derived ones
+        self.Bt_B_invSqrt_Btb = None
+        self.Bt_B_invSqrt_ellt = None
+        self.ell_BtB_inv_Bt_b = None
+        self.ell_BtB_inb_ellt = None
+        self.term_2 = None
 
+    def find_Lipschitz_constant(self):
+        # L = norm(self.Bt_B_invSqrt @ self.ell.T, ord=2) ** 2
+        # do power method
+        f = lambda x: -self.Bt_B_invSqrt @ (self.ell.T @ x)
+        
+        L = norm(-self.Bt_B_invSqrt_ellt, ord=2) ** 2
         return L
 
     def evaluate(self, theta):
+        # term_1 = (
+        #     0.5
+        #     * norm(self.Bt_B_invSqrt @ (-self.ell.T @ theta + self.B.T @ self.b)) ** 2
+
+        
+        f = lambda x: -self.Bt_B_invSqrt @ (self.ell.T @ x)
+        # term_1 = (
+        #     0.5
+        #     * norm(self.Bt_B_invSqrt_ellt @ theta + self.Bt_B_invSqrt_Btb) ** 2
+        # )
         term_1 = (
             0.5
-            * norm(self.Bt_B_invSqrt @ (-self.ell.T @ theta + self.B.T @ self.b)) ** 2
+            * norm(f(theta) + self.Bt_B_invSqrt_Btb) ** 2
         )
-
-        term_2 = -0.5 * norm(self.b.todense()) ** 2
-        return term_1 + term_2
+        # term_2 = -0.5 * norm(self.b.todense()) ** 2
+        return term_1 + self.term_2
 
     def evaluate_cvx(self, theta):
         term_1 = (
@@ -186,20 +205,27 @@ class sum_squared_loss_conj(Loss):
             raise NotImplementedError("We do not use first-order solver for this case.")
         else:
             raise NotImplementedError("Method not implemented.")
-
-        self.B = cache["B"]
-        self.b = cache["b"]
-        self.ell = cache["ell"]
-        self.Bt_B_inv = cache["Bt_B_inv"]
-        self.Bt_B_invSqrt = cache["Bt_B_invSqrt"]
-
+    
+        self.B = cache["B"]  # sparse
+        self.b = cache["b"]  # sparse
+        self.ell = cache["ell"]  # sparse
+        self.Bt_B_inv = cache["Bt_B_inv"]  # dense
+        self.Bt_B_invSqrt = cache["Bt_B_invSqrt"]  # dense
+        
+        # derived ones (all dense)
+        self.Bt_B_invSqrt_Btb = self.Bt_B_invSqrt @ self.B.T @ self.b
+        self.Bt_B_invSqrt_ellt = self.Bt_B_invSqrt @ -self.ell.T
+        self.ell_BtB_inv_Bt_b = self.ell @ self.Bt_B_inv @ self.B.T @ self.b
+        self.ell_BtB_inb_ellt = self.ell @ self.Bt_B_inv @ -self.ell.T
+        self.term_2 = -0.5 * norm(self.b.todense()) ** 2
+    
     def prox(self, theta):
-        return -self.ell @ self.Bt_B_inv @ (-self.ell.T @ theta + self.B.T @ self.b)
+        return - self.ell_BtB_inb_ellt @ theta - self.ell_BtB_inv_Bt_b
 
     def dual2primal(self, v):
         d = self.Bt_B_inv @ (-self.ell.T @ v + self.B.T @ self.b)
         return np.array(np.squeeze(d)).reshape(-1, 1)
-
+    
     def predict(self):
         pass
 
