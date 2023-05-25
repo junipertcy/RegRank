@@ -175,7 +175,7 @@ def cast2sum_squares_form(data, alpha, regularization=True):
     14     2  2
     15     3  3
     """
-    if type(data) is gt.Graph:
+    if type(data) is gt.Graph  or  type(data) is gt.GraphView :
         A = gt.adjacency(data)
     elif type(data) is csr_matrix:
         A = data
@@ -340,7 +340,7 @@ def grad_g_star(B, b, v):
 
 
 def compute_ell(g, sparse=True):
-    if type(g) is not gt.Graph:
+    if ( type(g) is not gt.Graph ) and ( type(g) is not gt.GraphView ):
         raise TypeError("g should be of type `graph_tool.Graph`.")
     try:
         ctr_classes = Counter(g.vp["goi"])
