@@ -50,7 +50,7 @@ class Regularizer:
 
 #### Regularizers
 class zero_reg(Regularizer):
-    def __init__(self, lambd=0):
+    def __init__(self, lambd=1):
         super().__init__(lambd)
         self.lambd = lambd
 
@@ -62,35 +62,34 @@ class zero_reg(Regularizer):
 
 
 class same_mean_reg(Regularizer):
-    def __init__(self, tau, lambd=0):
-        super().__init__(lambd)
+    # this is the conjugate function.
+    def __init__(self, lambd=1):
         self.lambd = lambd
-        self.tau = tau
 
     def evaluate(self, theta):
-        # return 0 if norm(theta / self.tau, ord=1) <= 1 else np.infty
+        # return 0 if norm(theta / self.lambd, ord=1) <= 1 else np.infty
         # may not be called very often
         # print( theta.shape )
-        return 0 if norm(theta, ord=np.inf) <= self.tau else np.infty
+        return 0 if norm(theta, ord=np.inf) <= self.lambd else np.infty
 
     def evaluate_cvx(self, theta):
-        return 0 if cp.norm(theta / self.tau, 1) <= 1 else np.infty
+        return 0 if cp.norm(theta / self.lambd, 1) <= 1 else np.infty
 
     def prox(self, theta, t):  # see LinfBall.py
-        if self.tau == 0:
+        if self.lambd == 0:
             return 0 * theta
         else:
-            return theta / np.maximum(1, np.abs(theta) / self.tau)
+            return theta / np.maximum(1, np.abs(theta) / self.lambd)
 
         # # called very often
-        # if self.tau >= norm(theta, ord='inf'):
+        # if self.lambd >= norm(theta, ord='inf'):
         #     return theta  # already feasible
         # else:
         #     return theta /
-        # return theta - np.multiply(np.sign(theta), np.maximum(0, np.fabs(theta) - self.tau * t))
+        # return theta - np.multiply(np.sign(theta), np.maximum(0, np.fabs(theta) - self.lambd * t))
 
-        #     # return theta - np.asarray(np.sign(theta)) * np.asarray(np.maximum(0, np.fabs(theta) - self.tau * t))
-        # return theta - np.multiply(np.sign(theta), np.maximum(0, np.fabs(theta) - self.tau * t))
+        #     # return theta - np.asarray(np.sign(theta)) * np.asarray(np.maximum(0, np.fabs(theta) - self.lambd * t))
+        # return theta - np.multiply(np.sign(theta), np.maximum(0, np.fabs(theta) - self.lambd * t))
 
-        # # return theta - cp.multiply(np.asarray(np.sign(theta)), np.asarray(np.maximum(0, np.fabs(theta) - self.tau * t)))
-        # # return theta - cp.multiply(cp.sign(theta), cp.maximum(0, np.fabs(theta) - self.tau * t))
+        # # return theta - cp.multiply(np.asarray(np.sign(theta)), np.asarray(np.maximum(0, np.fabs(theta) - self.lambd * t)))
+        # # return theta - cp.multiply(cp.sign(theta), cp.maximum(0, np.fabs(theta) - self.lambd * t))

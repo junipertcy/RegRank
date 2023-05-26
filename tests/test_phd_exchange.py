@@ -50,8 +50,8 @@ def compute(goi):
     sslc.setup(g, alpha=1)
     f = lambda x: sslc.evaluate(x)
     grad = lambda x: sslc.prox(x)
-    prox = lambda x, t: same_mean_reg(tau=1).prox(x, t)
-    prox_fcn = lambda x: same_mean_reg(tau=1).evaluate(x)
+    prox = lambda x, t: same_mean_reg(lambd=1).prox(x, t)
+    prox_fcn = lambda x: same_mean_reg(lambd=1).evaluate(x)
 
     x0 = np.random.rand(num_pairs_classes, 1)
 

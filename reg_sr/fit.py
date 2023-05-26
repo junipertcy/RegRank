@@ -89,11 +89,11 @@ class rSpringRank(object):
                 self.sslc.setup(data, alpha=self.alpha)
                 self.fo_setup["f"] = lambda x: self.sslc.evaluate(x)
                 self.fo_setup["grad"] = lambda x: self.sslc.prox(x)
-                self.fo_setup["prox"] = lambda x, t: same_mean_reg(tau=self.lambd).prox(
+                self.fo_setup["prox"] = lambda x, t: same_mean_reg(lambd=self.lambd).prox(
                     x, t
                 )
                 self.fo_setup["prox_fcn"] = lambda x: same_mean_reg(
-                    tau=self.lambd
+                    lambd=self.lambd
                 ).evaluate(x)
 
                 # first order kwargs
@@ -125,9 +125,11 @@ class rSpringRank(object):
                 self.result["dual"] = np.array(dual).reshape(1, -1)[0]
                 self.result["primal"] = self.sslc.dual2primal(dual).reshape(1, -1)[0]
                 self.result["fo_output"] = _
+
                 # compute primal functional value
                 f_all_primal = lambda x: 0.5 * norm(self.sslc.B @ x - self.sslc.b) ** 2 + self.lambd * np.linalg.norm(self.sslc.ell @ x, 1)
                 self.result["f_primal"] = f_all_primal(self.result["primal"].reshape(-1, 1))
+                self.result["f_dual"] = self.sslc.evaluate(self.result["dual"].reshape(-1, 1))
         elif self.method == "time::l1":
             # In this case, we cast to sum-of-squares form
             # and use the dual-based proximal gradient descent algorithm
@@ -152,8 +154,9 @@ class rSpringRank(object):
 
                 self.fo_setup["f"] = lambda x: self.sslc.evaluate(x)
                 self.fo_setup["grad"] = lambda x: self.sslc.prox(x)
-                self.fo_setup["prox"] = lambda x, t: same_mean_reg(tau=1).prox(x, t)
-                self.fo_setup["prox_fcn"] = lambda x: same_mean_reg(tau=1).evaluate(x)
+                # Do not change the lambd value here.
+                self.fo_setup["prox"] = lambda x, t: same_mean_reg(lambd=1).prox(x, t)
+                self.fo_setup["prox_fcn"] = lambda x: same_mean_reg(lambd=1).evaluate(x)
                 # first order kwargs
                 self.fo_setup["printEvery"] = kwargs.get("printEvery", 5000)
                 self.fo_setup["ArmijoLinesearch"] = kwargs.get("ArmijoLinesearch", True)

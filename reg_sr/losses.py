@@ -163,7 +163,6 @@ class sum_squared_loss_conj(Loss):
             * cp.norm(self.Bt_B_invSqrt @ (-self.ell.T @ theta + self.B.T @ self.b))
             ** 2
         )
-
         term_2 = -0.5 * cp.norm(self.b.todense()) ** 2
         return term_1 + term_2
 

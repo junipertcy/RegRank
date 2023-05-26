@@ -120,23 +120,17 @@ def crossValidation(G, folds, reps):
             # # f_L = interp1d(x, y_L, kind='linear', fill_value="extrapolate")
             # cv_alpha = minimize(f_a, x0=0).x[0]
             cv_alpha = 0.01
-            print("Beginning vanilla")
             rsp = rSpringRank(method="vanilla")
             s0 = rsp.fit(G, alpha=cv_alpha)["primal"]
 
-            print(s0)
-
             # s0 = springRank(TRAIN)
             bloc0 = betaLocal(TRAIN, s0)
-            print(f"bloc0: {bloc0}")
             bglob0 = betaGlobal(TRAIN, s0)
-            print(f"bglob0: {bglob0}")
 
             # SpringRank accuracies on TEST set
             TEST = np.array(TEST.todense(), dtype=np.float64)
             sig_a[foldrep, 0] = localAccuracy(TEST, s0, bloc0)
             sig_L[foldrep, 0] = -globalAccuracy(TEST, s0, bglob0) / numTestEdges
-            print("Done with vanilla")
 
             # # Train regularized SpringRank on the TRAIN set
             # x, y_a, y_L = [], [], []
@@ -150,9 +144,8 @@ def crossValidation(G, folds, reps):
             # # f_L = interp1d(x, y_L, kind='linear', fill_value="extrapolate")
             # cv_alpha = minimize(f_a, x0=0).x[0]
             cv_alpha = 0.01
-            print("Beginning annotated")
             rsp = rSpringRank(method="annotated")
-            s1 = rsp.fit(G, alpha=cv_alpha, lambd=1)["primal"]
+            s1 = rsp.fit(G, alpha=cv_alpha, lambd=10)["primal"]
             # s2 = springRankFull(TRAIN, 2)
             bloc1 = betaLocal(TRAIN, s1)
             bglob1 = betaGlobal(TRAIN, s1)
@@ -160,7 +153,6 @@ def crossValidation(G, folds, reps):
             # # Regularized SpringRank accuracies on TEST set
             sig_a[foldrep, 1] = localAccuracy(TEST, s1, bloc1)
             sig_L[foldrep, 1] = -globalAccuracy(TEST, s1, bglob1) / numTestEdges
-            print("Done with annotated")
     return sig_a, sig_L
 
 
@@ -276,11 +268,8 @@ def _crossValidation(G, folds, reps, alpha):
 
 @njit(cache=True)
 def localAccuracy(A, s, b):
-    # total edges
     m = np.sum(A)
-    # number of vertices
     n = len(s)
-    # accumulate accuracy of predictions
     y = 0
     for i in range(n):
         for j in range(n):
@@ -294,16 +283,13 @@ def localAccuracy(A, s, b):
 
 @njit(cache=True)
 def globalAccuracy(A, s, b):
-    # number of nodes
     n = len(s)
-    # accumulate the log likelihood score elementwise
     y = 0
     for i in range(n):
         for j in range(n):
             d = s[i] - s[j]
             p = (1 + np.exp(-2 * b * d)) ** (-1)
             if p == 0 or p == 1:
-                # do nothing
                 pass
             else:
                 y = y + A[i, j] * np.log(p) + A[j, i] * np.log(1 - p)
@@ -336,7 +322,6 @@ def betaGlobal(A, s):
     M = np.array(A.todense(), dtype=np.float64)
     r = np.array(s, dtype=np.float64)
     b = minimize_scalar(lambda _: f(M, r, _) ** 2, bounds=(1e-6, 1000)).x
-    # b = fsolve(lambda _: f(M, r, _), 0.1)[0]
     return b
 
 
