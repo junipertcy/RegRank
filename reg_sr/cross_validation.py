@@ -36,6 +36,8 @@ from reg_sr.experiments import *
 import reg_sr
 from reg_sr.fit import rSpringRank
 
+from numba import njit
+
 
 def shuffle(arr):
     np.random.shuffle(arr)
@@ -90,61 +92,23 @@ def crossValidation(G, folds, reps):
             test_ji = np.stack((test_j, test_i), axis=-1)
             train_mask = G.new_edge_property("bool", val=True)
             test_mask = G.new_edge_property("bool", val=False)
-            # print(dir(efilt_ij), efilt_ij)
-            # for edge in G.edges():
-            #     print(type(edge), edge)
-            # for edge in test_ij:
-            #     efilt_ij[edge] = 1
-            # efilt_ij[edge[1], edge[0]] = 1
-            # print(test_i, test_j)
-            # print(test_ij)
+
+            # Build the training set by setting test set interactions to zero
             train_mask.a[test_ij] = False
             train_mask.a[test_ji] = False
             test_mask.a[test_ij] = True
             test_mask.a[test_ji] = True
-            # print(train_mask.fa)
-            # print("$$$$")
-            # print(test_mask.fa)
-            # vb, eb = gt.betweenness(g)
-            # train_mask = G.new_ep("bool", vals = eb.fa < 1e-5)
-            # G.set_edge_filter(train_mask)
-            # G.set_edge_filter(test_mask)
-            # print(G)
-            # efilt_ij
-
-            # efilt_ij[test_i, test_j] = 1
-
-            # print(efilt_ij)
-            # Use np.ravel_multi_index to convert subscripts to linear indices
-            # test = np.ravel_multi_index((test_i, test_j), A.shape)
-            # testpose = np.ravel_multi_index((test_j, test_i), A.shape)
-
-            # test = [int(_) for _ in test]
-            # testpose = [int(_) for _ in testpose]
-
-            # Build the training set by setting test set interactions to zero
-            # TRAIN = A.copy()
-            # TRAIN =
-            # print(test)
-            # TRAIN[test_i, test_j] = 0
-            # TRAIN[test_j, test_i] = 0
-            # TRAIN[test] = 0
-            # TRAIN[testpose] = 0
 
             # Build the test set
-            # TEST = A - TRAIN
             G.set_edge_filter(test_mask)
             TEST = gt.adjacency(G)
-            # numTestEdges = np.sum(np.sum(TEST))
 
             numTestEdges = G.num_edges()
 
             # Train SpringRank on the TRAIN set
-            # print(TRAIN)
             G.set_edge_filter(train_mask)
-
             TRAIN = gt.adjacency(G)
-            
+
             # x, y_a, y_L = [], [], []
             # for _alpha in np.logspace(-1, 2, 10):
             #     x.append(_alpha)
@@ -156,26 +120,23 @@ def crossValidation(G, folds, reps):
             # # f_L = interp1d(x, y_L, kind='linear', fill_value="extrapolate")
             # cv_alpha = minimize(f_a, x0=0).x[0]
             cv_alpha = 0.01
-
+            print("Beginning vanilla")
             rsp = rSpringRank(method="vanilla")
             s0 = rsp.fit(G, alpha=cv_alpha)["primal"]
 
-            # print(result)
+            print(s0)
 
             # s0 = springRank(TRAIN)
             bloc0 = betaLocal(TRAIN, s0)
+            print(f"bloc0: {bloc0}")
             bglob0 = betaGlobal(TRAIN, s0)
+            print(f"bglob0: {bglob0}")
 
             # SpringRank accuracies on TEST set
+            TEST = np.array(TEST.todense(), dtype=np.float64)
             sig_a[foldrep, 0] = localAccuracy(TEST, s0, bloc0)
             sig_L[foldrep, 0] = -globalAccuracy(TEST, s0, bglob0) / numTestEdges
-
-            ######################################################
-            # NOTE THAT IF YOU WANT TO COMPARE OTHER METHODS TO SPRINGRANK,
-            # THIS IS THE PLACE THAT THEY SHOULD BE INCLUDED.
-            # Commented out below, you can see the call to springRank with the
-            # regularization, as well as the call to BTL and its separate accuracy.
-            ######################################################
+            print("Done with vanilla")
 
             # # Train regularized SpringRank on the TRAIN set
             # x, y_a, y_L = [], [], []
@@ -189,7 +150,7 @@ def crossValidation(G, folds, reps):
             # # f_L = interp1d(x, y_L, kind='linear', fill_value="extrapolate")
             # cv_alpha = minimize(f_a, x0=0).x[0]
             cv_alpha = 0.01
-
+            print("Beginning annotated")
             rsp = rSpringRank(method="annotated")
             s1 = rsp.fit(G, alpha=cv_alpha, lambd=1)["primal"]
             # s2 = springRankFull(TRAIN, 2)
@@ -199,14 +160,7 @@ def crossValidation(G, folds, reps):
             # # Regularized SpringRank accuracies on TEST set
             sig_a[foldrep, 1] = localAccuracy(TEST, s1, bloc1)
             sig_L[foldrep, 1] = -globalAccuracy(TEST, s1, bglob1) / numTestEdges
-
-            # # Train BTL on the TRAIN set
-            # bt = btl(TRAIN, 1e-3)
-            #
-            # # BTL accuracies on TEST set
-            # sig_a[foldrep, 2] = localAccuracy_BTL(TEST, bt)
-            # sig_L[foldrep, 2] = -globalAccuracy_BTL(TEST, bt) / numTestEdges
-
+            print("Done with annotated")
     return sig_a, sig_L
 
 
@@ -258,86 +212,74 @@ def _crossValidation(G, folds, reps, alpha):
             bglob0 = betaGlobal(TRAIN, s0)
 
             # SpringRank accuracies on TEST set
+            TEST = np.array(TEST.todense(), dtype=np.float64)
             sig_a[foldrep, 0] = localAccuracy(TEST, s0, bloc0)
             sig_L[foldrep, 0] = -globalAccuracy(TEST, s0, bglob0) / numTestEdges
 
     return sig_a, sig_L
 
 
+# def _crossValidation2(G, folds, reps, alpha):
+#     A = gt.adjacency(G)
+#     r, c, v = find(triu(A + A.T))
+#     M = len(v)
+#     foldSize = M // folds
+#     sig_a = np.zeros((reps * folds, 1))
+#     sig_L = np.zeros((reps * folds, 1))
+#     np.random.seed(0)
+#     for rep in range(reps):
+#         idx = shuffle(np.arange(M))
+#         fold = []
+#         for f in range(folds - 1):
+#             fold.append(idx[(f * foldSize) : ((f + 1) * foldSize)])
+#         fold.append(idx[((folds - 1) * foldSize) :])
+#         for f in range(folds):
+#             print(
+#                 "training (+validating) progress: Rep {}/{}, Fold {}/{}.".format(
+#                     rep + 1, reps, f + 1, folds
+#                 )
+#             )
+#             foldrep = f + rep * folds
+
+#             test_i = r[fold[f]]
+#             test_j = c[fold[f]]
+#             test_ij = np.stack((test_i, test_j), axis=-1)
+#             test_ji = np.stack((test_j, test_i), axis=-1)
+#             train_mask = G.new_edge_property("bool", val=True)
+#             validation_mask = G.new_edge_property("bool", val=False)
+#             train_mask.a[test_ij] = False
+#             train_mask.a[test_ji] = False
+#             validation_mask.a[test_ij] = True
+#             validation_mask.a[test_ji] = True
+
+#             G.set_edge_filter(validation_mask)
+#             TEST = gt.adjacency(G)
+
+#             numTestEdges = G.num_edges()
+
+#             G.set_edge_filter(train_mask)
+#             TRAIN = gt.adjacency(G)
+
+#             rsp = rSpringRank(method="annotated")
+#             s0 = rsp.fit(G, alpha=alpha, lambd=1)["primal"]
+
+#             bloc0 = betaLocal(TRAIN, s0)
+#             bglob0 = betaGlobal(TRAIN, s0)
+
+#             # SpringRank accuracies on TEST set
+#             TEST = np.array(TEST.todense(), dtype=np.float64)
+#             sig_a[foldrep, 0] = localAccuracy(TEST, s0, bloc0)
+#             sig_L[foldrep, 0] = -globalAccuracy(TEST, s0, bglob0) / numTestEdges
+
+#     return sig_a, sig_L
 
 
-
-def _crossValidation2(G, folds, reps, alpha):
-    A = gt.adjacency(G)
-    r, c, v = find(triu(A + A.T))
-    M = len(v)
-    foldSize = M // folds
-    sig_a = np.zeros((reps * folds, 1))
-    sig_L = np.zeros((reps * folds, 1))
-    np.random.seed(0)
-    for rep in range(reps):
-        idx = shuffle(np.arange(M))
-        fold = []
-        for f in range(folds - 1):
-            fold.append(idx[(f * foldSize) : ((f + 1) * foldSize)])
-        fold.append(idx[((folds - 1) * foldSize) :])
-        for f in range(folds):
-            print(
-                "training (+validating) progress: Rep {}/{}, Fold {}/{}.".format(
-                    rep + 1, reps, f + 1, folds
-                )
-            )
-            foldrep = f + rep * folds
-
-            test_i = r[fold[f]]
-            test_j = c[fold[f]]
-            test_ij = np.stack((test_i, test_j), axis=-1)
-            test_ji = np.stack((test_j, test_i), axis=-1)
-            train_mask = G.new_edge_property("bool", val=True)
-            validation_mask = G.new_edge_property("bool", val=False)
-            train_mask.a[test_ij] = False
-            train_mask.a[test_ji] = False
-            validation_mask.a[test_ij] = True
-            validation_mask.a[test_ji] = True
-
-            G.set_edge_filter(validation_mask)
-            TEST = gt.adjacency(G)
-
-            numTestEdges = G.num_edges()
-
-            G.set_edge_filter(train_mask)
-            TRAIN = gt.adjacency(G)
-
-            rsp = rSpringRank(method="annotated")
-            s0 = rsp.fit(G, alpha=alpha, lambd=1)["primal"]
-
-            bloc0 = betaLocal(TRAIN, s0)
-            bglob0 = betaGlobal(TRAIN, s0)
-
-            # SpringRank accuracies on TEST set
-            sig_a[foldrep, 0] = localAccuracy(TEST, s0, bloc0)
-            sig_L[foldrep, 0] = -globalAccuracy(TEST, s0, bglob0) / numTestEdges
-
-    return sig_a, sig_L
-
-
-
-
-
-
-
-
-
-
-
-
+@njit(cache=True)
 def localAccuracy(A, s, b):
     # total edges
     m = np.sum(A)
-
     # number of vertices
     n = len(s)
-
     # accumulate accuracy of predictions
     y = 0
     for i in range(n):
@@ -345,12 +287,12 @@ def localAccuracy(A, s, b):
             d = s[i] - s[j]
             p = (1 + np.exp(-2 * b * d)) ** (-1)
             y = y + abs(A[i, j] - (A[i, j] + A[j, i]) * p)
-
     # cleanup
     a = 1 - 0.5 * y / m
     return a
 
 
+@njit(cache=True)
 def globalAccuracy(A, s, b):
     # number of nodes
     n = len(s)
@@ -369,22 +311,21 @@ def globalAccuracy(A, s, b):
 
 
 def betaLocal(A, s):
-    global M, r
-    M = A
-    r = s
-    b = minimize_scalar(negacc, bounds=(1e-6, 1000)).x
+    M = np.array(A.todense(), dtype=np.float64)
+    r = np.array(s, dtype=np.float64)
+    b = minimize_scalar(lambda _: negacc(M, r, _), bounds=(1e-6, 1000)).x
     return b
 
 
-def negacc(b):
-    global M, r
+@njit(parallel=True, cache=True)
+def negacc(M, r, b):
     m = np.sum(M)
     n = len(r)
     y = 0
     for i in range(n):
         for j in range(n):
             d = r[i] - r[j]
-            y = y + abs(
+            y += np.abs(
                 M[i, j] - (M[i, j] + M[j, i]) * ((1 + np.exp(-2 * b * d)) ** (-1))
             )
     a = y / m - 1
@@ -392,20 +333,20 @@ def negacc(b):
 
 
 def betaGlobal(A, s):
-    global M, r
-    M = A
-    r = s
-    b = fsolve(f, 0.1)[0]
+    M = np.array(A.todense(), dtype=np.float64)
+    r = np.array(s, dtype=np.float64)
+    b = minimize_scalar(lambda _: f(M, r, _) ** 2, bounds=(1e-6, 1000)).x
+    # b = fsolve(lambda _: f(M, r, _), 0.1)[0]
     return b
 
 
-def f(b):
-    global M, r
+@njit(cache=True)
+def f(M, r, b):
     n = len(r)
-    y = 0
+    y = 0.0
     for i in range(n):
         for j in range(n):
             d = r[i] - r[j]
             pij = (1 + np.exp(-2 * b * d)) ** (-1)
-            y = y + d * (M[i, j] - (M[i, j] + M[j, i]) * pij)
+            y += np.float64(d * (M[i, j] - (M[i, j] + M[j, i]) * pij))
     return y

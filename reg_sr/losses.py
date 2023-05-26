@@ -143,29 +143,18 @@ class sum_squared_loss_conj(Loss):
         self.term_2 = None
 
     def find_Lipschitz_constant(self):
-        # L = norm(self.Bt_B_invSqrt @ self.ell.T, ord=2) ** 2
-        # do power method
-        f = lambda x: -self.Bt_B_invSqrt @ (self.ell.T @ x)
+        # TODO: do power method
+        # f = lambda x: self.Bt_B_invSqrt @ (self.ell.T @ x)
         
-        L = norm(-self.Bt_B_invSqrt_ellt, ord=2) ** 2
+        L = norm(self.Bt_B_invSqrt_ellt, ord=2) ** 2
         return L
 
     def evaluate(self, theta):
-        # term_1 = (
-        #     0.5
-        #     * norm(self.Bt_B_invSqrt @ (-self.ell.T @ theta + self.B.T @ self.b)) ** 2
-
-        
         f = lambda x: -self.Bt_B_invSqrt @ (self.ell.T @ x)
-        # term_1 = (
-        #     0.5
-        #     * norm(self.Bt_B_invSqrt_ellt @ theta + self.Bt_B_invSqrt_Btb) ** 2
-        # )
         term_1 = (
             0.5
             * norm(f(theta) + self.Bt_B_invSqrt_Btb) ** 2
         )
-        # term_2 = -0.5 * norm(self.b.todense()) ** 2
         return term_1 + self.term_2
 
     def evaluate_cvx(self, theta):
@@ -208,7 +197,7 @@ class sum_squared_loss_conj(Loss):
 
         # derived ones
         self.Bt_B_invSqrt_Btb = self.Bt_B_invSqrt @ self.B.T @ self.b
-        self.Bt_B_invSqrt_ellt = self.Bt_B_invSqrt @ -self.ell.T
+        self.Bt_B_invSqrt_ellt = self.Bt_B_invSqrt @ self.ell.T
         self.ell_BtB_inv_Bt_b = self.ell @ self.Bt_B_inv @ self.B.T @ self.b  # sparse
         self.ell_BtB_inb_ellt = self.ell @ self.Bt_B_inv @ -self.ell.T  # sparse
         self.ell_BtB_inv_Bt_b = np.array(self.ell_BtB_inv_Bt_b.todense(), dtype=np.float64)
