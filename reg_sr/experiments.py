@@ -220,12 +220,15 @@ class PhDExchange(Experiment):
             reverse=False,
         )[:num]
 
-    def print_sorted_mean(self, num=5):
-        return sorted(
+    def print_sorted_mean(self, num=5, precision=3):
+        _sorted = sorted(
             self.basic_stats["mean_dict"].items(),
             key=lambda item: item[1],
             reverse=True,
         )[:num]
+        for _ in _sorted:
+            # TODO: precision cannot be customized
+            print(f"Group: {_[0]}; Mean: {_[1]:0,.3f}")
 
 
 class PeerInstitution(Experiment):

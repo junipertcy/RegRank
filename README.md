@@ -31,10 +31,20 @@ In your Python console, `simplicial-test` is invoked using:
 >>> rsp = rSpringRank(method="annotated")
 >>> result = rsp.fit(g, alpha=1, lambd=1, printEvery=0)  # actual computation; takes ~5 seconds
 >>> pde.compute_basic_stats(rsp.sslc, primal_s=result["primal"])
->>> print(pde.print_sorted_mean(5), "\n")  # output the higher mean SpringRank categories
-[('15', 0.1707651338294165), ('na', -0.04295735042383188), ('22', -0.042962551997466514), ('18', -0.0429638541050557), ('21', -0.04296445559099135)] 
+>>> pde.print_sorted_mean(5, precision=3)  # output the higher mean SpringRank categories
+Group: 15; Mean: 0.171
+Group: na; Mean: -0.043
+Group: 22; Mean: -0.043
+Group: 18; Mean: -0.043
+Group: 21; Mean: -0.043
+```
+
+As you noticed, most groups have the same mean SpringRank. This is the regularizer in effect. To plot the distribution, do this.
+
+```
 >>> pde.plot_hist(bin_count=20, legend=True)
 ```
+
 ![A histogram of ranks stratified by C18 category](etc/example_c18.png)
 
 
