@@ -20,8 +20,33 @@
 
 __version__ = "0.0.1"
 
-from reg_sr.fit import *
-from reg_sr.models import *
-from reg_sr.losses import *
-from reg_sr.regularizers import *
-from reg_sr.utils import *
+from .fit import *
+from .models import *
+from .losses import *
+from .regularizers import *
+from .utils import *
+from .experiments import *
+
+__package__ = 'regularized_springrank'
+__title__ = 'regularized_springrank: regularized methods for efficient ranking in networks.'
+__description__ = ''
+__copyright__ = 'Copyright (C) 2023 Tzu-Chi Yen'
+__license__ = "LGPL version 3 or above"
+__author__ = """\n""".join([
+    'Tzu-Chi Yen <tzuchi.yen@colorado.edu>',
+])
+__URL__ = ""
+__version__ = '0.8.0'
+__release__ = ''
+
+
+__all__ = [
+    "rSpringRank",
+    "PhDExchange",
+    "__author__",
+    "__URL__",
+    "__version__",
+    "__copyright__"
+]
+
+

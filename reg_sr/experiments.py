@@ -103,7 +103,8 @@ class PhDExchange(Experiment):
             src = int(_d["source"]) - 1
             tar = int(_d["target"]) - 1
             if tar != src:
-                self.g.add_edge(src, tar)
+                self.g.add_edge(tar, src)
+                # self.g.add_edge(src, tar)   # old
 
         #     if np.random.random() < 0.1:
         #         self.g.add_edge(np.random.randint(231), np.random.randint(231))
@@ -164,7 +165,11 @@ class PhDExchange(Experiment):
         bins = np.histogram(np.concatenate(hstack), bins=bin_count)[1]
 
         for key in self.data_goi.keys():
-            plt.hist(self.data_goi[key], bins, label=key, alpha=0.5)
+            data = np.array(self.data_goi[key]).reshape(-1,)
+            plt.hist(data, bins, label=key, alpha=0.5, edgecolor='white', linewidth=1.2)
+        
+        plt.ylabel("Frequency")
+        plt.xlabel("SpringRank")
         if legend:
             plt.legend()
 
@@ -343,7 +348,11 @@ class PeerInstitution(Experiment):
         bins = np.histogram(np.concatenate(hstack), bins=bin_count)[1]
 
         for key in self.data_goi.keys():
-            plt.hist(self.data_goi[key], bins, label=key, alpha=0.5)
+            data = np.array(self.data_goi[key]).reshape(-1,)
+            plt.hist(data, bins, label=key, alpha=0.5, edgecolor='white', linewidth=1.2)
+        
+        plt.ylabel("frequency")
+        plt.xlabel("SpringRank")
         if legend:
             plt.legend()
 
