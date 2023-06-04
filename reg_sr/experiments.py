@@ -377,3 +377,54 @@ class PeerInstitution(Experiment):
             key=lambda item: item[1],
             reverse=True,
         )[:num]
+
+
+class Parakeet(Experiment):
+    def __init__(self):
+        super().__init__()
+        self.g = gt.Graph()
+    
+    def get_data(self, path="./data/parakeet/aggXquarter.txt", group="G1"):
+        """
+        goi: which stratum (metadata of the nodes) that you are looking for?
+
+        """
+        name2id = dict()
+        id_counter = 0
+        qtrs = []
+        with open(path, "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                # src: actor; tar: target
+                grp, qtr, src, tar, wins = line.split()
+                if grp != group:
+                    continue
+                try:
+                    name2id[src]
+                except KeyError:
+                    name2id[src] = id_counter
+                    id_counter += 1
+
+                try:
+                    name2id[tar]
+                except KeyError:
+                    name2id[tar] = id_counter
+                    id_counter += 1
+
+                for _ in range(int(wins)):
+                    self.g.add_edge(name2id[tar], name2id[src])  # actor wins, so we reverse the edge
+                    qtrs.append(str(qtr))
+
+        id2name = {v: k for k, v in name2id.items()}
+
+        self.g.vp["name"] = self.g.new_vertex_property("string")
+        for node in self.g.vertices():
+            self.g.vp["name"][node] = id2name[node]
+
+        self.g.ep["quarter"] = self.g.new_edge_property("string")
+        for eid, _ in enumerate(self.g.edges()):
+            self.g.ep["quarter"][_] = qtrs[eid]
+
+        return self.g
+
+

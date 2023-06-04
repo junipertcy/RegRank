@@ -9,6 +9,7 @@ from collections import Counter
 from scipy.linalg import svd
 from scipy.sparse.linalg import svds
 import linecache
+from random import sample
 
 from logging import getLogger
 
@@ -175,7 +176,7 @@ def cast2sum_squares_form(data, alpha, regularization=True):
     14     2  2
     15     3  3
     """
-    if type(data) is gt.Graph  or  type(data) is gt.GraphView :
+    if type(data) is gt.Graph or type(data) is gt.GraphView:
         A = gt.adjacency(data)
     elif type(data) is csr_matrix:
         A = data
@@ -238,40 +239,42 @@ def cast2sum_squares_form(data, alpha, regularization=True):
         )
     return B, b
 
-def compute_cache_from_data_t(data, alpha=1, lambd=1, from_year=1960, to_year=1961, top_n=70):
-        B, b, _ell = cast2sum_squares_form_t(
-            data,
-            alpha,
-            lambd=lambd,
-            from_year=from_year,
-            to_year=to_year,
-            top_n=top_n,
-            separate=True,
-        )
 
-        # for timewise setting, we always use sparse matrix
-        sparse = True
+def compute_cache_from_data_t(
+    data, alpha=1, lambd=1, from_year=1960, to_year=1961, top_n=70
+):
+    B, b, _ell = cast2sum_squares_form_t(
+        data,
+        alpha,
+        lambd=lambd,
+        from_year=from_year,
+        to_year=to_year,
+        top_n=top_n,
+        separate=True,
+    )
 
-        # somehow, sparse Bt_B_inv runs faster
-        Bt_B_inv = compute_Bt_B_inv(B, sparse=True)
-        # _, s, Vh = svd(B.todense(), full_matrices=False)
-        if type(B) is not csr_matrix:
-            _, s, Vh = svd(B.todense(), full_matrices=False)
-        else:
-            # this is much slower than the dense counterpart
-            _, s, Vh = svds(
-                B, k=min(B.shape) - 1, solver="arpack"
-            )  # implement svd for sparse matrix
-        Bt_B_invSqrt = Vh.T @ np.diag(1 / s) @ Vh
+    # for timewise setting, we always use sparse matrix
+    sparse = True
 
-        return {
-            "B": B,
-            "b": b,
-            "ell": _ell,
-            "Bt_B_inv": Bt_B_inv,
-            "Bt_B_invSqrt": Bt_B_invSqrt,
-        }
+    # somehow, sparse Bt_B_inv runs faster
+    Bt_B_inv = compute_Bt_B_inv(B, sparse=True)
+    # _, s, Vh = svd(B.todense(), full_matrices=False)
+    if type(B) is not csr_matrix:
+        _, s, Vh = svd(B.todense(), full_matrices=False)
+    else:
+        # this is much slower than the dense counterpart
+        _, s, Vh = svds(
+            B, k=min(B.shape) - 1, solver="arpack"
+        )  # implement svd for sparse matrix
+    Bt_B_invSqrt = Vh.T @ np.diag(1 / s) @ Vh
 
+    return {
+        "B": B,
+        "b": b,
+        "ell": _ell,
+        "Bt_B_inv": Bt_B_inv,
+        "Bt_B_invSqrt": Bt_B_invSqrt,
+    }
 
 
 def compute_cache_from_data(data, alpha, regularization=True):
@@ -291,6 +294,7 @@ def compute_cache_from_data(data, alpha, regularization=True):
 
     """
     import datetime
+
     B, b = cast2sum_squares_form(data, alpha, regularization=regularization)
     _ell = compute_ell(data)
     Bt_B_inv = compute_Bt_B_inv(B, sparse=True)  # expensive step
@@ -309,6 +313,7 @@ def compute_cache_from_data(data, alpha, regularization=True):
         "Bt_B_invSqrt": Bt_B_invSqrt,
     }
 
+
 def compute_Bt_B_inv(B, sparse=True):
     if not sparse:
         return np.linalg.inv(B.T @ B)
@@ -320,7 +325,7 @@ def grad_g_star(B, b, v):
 
 
 def compute_ell(g, sparse=True):
-    if ( type(g) is not gt.Graph ) and ( type(g) is not gt.GraphView ):
+    if (type(g) is not gt.Graph) and (type(g) is not gt.GraphView):
         raise TypeError("g should be of type `graph_tool.Graph`.")
     try:
         ctr_classes = Counter(g.vp["goi"])
@@ -353,7 +358,9 @@ def compute_ell(g, sparse=True):
                 else:
                     ell[idx][_] = ctr_classes[j] ** -1
     if sparse:
-        ell = csr_matrix((data, (row, col)), shape=(comb(len_classes, 2), len(g.get_vertices())))
+        ell = csr_matrix(
+            (data, (row, col)), shape=(comb(len_classes, 2), len(g.get_vertices()))
+        )
     return ell
 
 
@@ -399,7 +406,9 @@ def render_ijwt(
                 timeid += 1
 
             g.add_edge_list(
-                [(name2id[ijwt[0]], name2id[ijwt[1]], ijwt[2], time2id[ijwt[3]])],
+                [
+                    (name2id[ijwt[1]], name2id[ijwt[0]], ijwt[2], time2id[ijwt[3]])
+                ],  # note the source / target order
                 eprops=[eweight, etime],
             )
     g.edge_properties["eweight"] = eweight
@@ -412,6 +421,7 @@ def render_ijwt(
     # print(school_name(165))  # >> University of Michigan
     for vertex in g.vertices():
         vname[vertex] = school_name(int(id2name[vertex]))
+        # print(vname[vertex], vertex, id2name[vertex])
         vindex[vertex] = vertex.__int__()
 
     g.vertex_properties["vname"] = vname
@@ -429,6 +439,27 @@ def filter_by_time(g, time):
         else:
             mask_e[edge] = 0
     return mask_e
+
+
+def add_erroneous_edges(g, nid=0, times=1, method="single_point_mutation"):
+    if method == "single_point_mutation":
+        # scenario 1: add "single point mutation"
+        for _ in range(int(times)):
+            for node in range(g.num_vertices()):
+                if node != nid:
+                    # nid always endorsed by others
+                    g.add_edge(node, nid) 
+
+    elif method == "random_edges":
+        # scenario 2: add random edges
+        for _ in range(int(times)):
+            src, tar = sample(range(g.num_vertices()), 2)
+            g.add_edge(src, tar)
+    else:
+        raise NotImplementedError(
+            "method should be either `single_point_mutation` or `random_edges`."
+        )
+    return g
 
 
 def D_operator(s):

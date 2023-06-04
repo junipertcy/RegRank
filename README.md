@@ -1,6 +1,6 @@
 # Regularized-SpringRank
 
-[![license](https://img.shields.io/badge/license-LGPL-green.svg?style=flat)](https://github.com/junipertcy/Regularized-SpringRank/blob/master/COPYING)
+[![license](https://img.shields.io/badge/license-LGPL-green.svg?style=flat)](https://github.com/junipertcy/Regularized-SpringRank/blob/main/COPYING)
 
 
 **Regularized_SpringRank** implements a collection of regularized, convex models (+solvers) that allow the inference of hierarchical structure in a directed network, which exists due to dominance, social status, or prestige. Specifically, this work leverages the time-varying structure and/or the node metadata present in the data set.

@@ -58,11 +58,7 @@ class rSpringRank(object):
                     cp.Minimize(v_cvx.objective_fn_primal(primal_s))
                 )  # for vanilla
                 problem.solve(
-                    solver=cp.GUROBI,
                     verbose=False,
-                    reltol=1e-13,
-                    abstol=1e-13,
-                    max_iters=1e5,
                 )
                 primal = primal_s.value.reshape(
                     -1,
@@ -211,7 +207,28 @@ class rSpringRank(object):
 
         elif self.method == "huber":
             # In this case we use CVXPY to solve the problem.
-            pass
+            if self.cvxpy:
+                self.M = kwargs.get("M", 1)
+                self.incl_reg = kwargs.get("incl_reg", True)
+                h_cvx = huber_cvx(data, alpha=self.alpha, M=self.M, incl_reg=self.incl_reg)
+                primal_s = cp.Variable((data.num_vertices(), 1))
+                problem = cp.Problem(cp.Minimize(h_cvx.objective_fn_primal(primal_s)))  # for huber
+                try:
+                    problem.solve(verbose=False)
+                except cp.SolverError:
+                    problem.solve(
+                        solver=cp.GUROBI,
+                        verbose=False,
+                        reltol=1e-13,
+                        abstol=1e-13,
+                        max_iters=1e5,
+                    )
+                primal = primal_s.value.reshape(-1, )
+                self.result["primal"] = primal
+                self.result["f_primal"] = problem.value
+            else:
+                raise NotImplementedError("First-order solver for Huber norm has not been not implemented. " +
+                                          "Please set explicitly that cvxpy=True.")
         else:
             raise NotImplementedError("Method not implemented.")
 

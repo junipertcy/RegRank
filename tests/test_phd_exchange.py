@@ -45,7 +45,6 @@ def compute(goi):
 
 
     ### Our method; DUAL ###
-
     sslc = sum_squared_loss_conj()
     sslc.setup(g, alpha=1)
     f = lambda x: sslc.evaluate(x)
