@@ -40,6 +40,7 @@ from reg_sr.losses import *
 # https://graph-tool.skewed.de/static/doc/quickstart.html#sec-graph-filtering
 class Experiment:
     def __init__(self):
+        self.basic_stats = defaultdict(int)
         pass
 
     def get_data(self):
@@ -47,6 +48,16 @@ class Experiment:
 
     def draw(self):
         pass
+    
+    def print_sorted_mean(self, num=5, precision=3):
+        _sorted = sorted(
+            self.basic_stats["mean_dict"].items(),
+            key=lambda item: item[1],
+            reverse=True,
+        )[:num]
+        for _ in _sorted:
+            # TODO: precision cannot be customized
+            print(f"Group: {_[0]}; Mean: {_[1]:0,.3f}")
 
 
 class SmallGraph(Experiment):
@@ -220,15 +231,6 @@ class PhDExchange(Experiment):
             reverse=False,
         )[:num]
 
-    def print_sorted_mean(self, num=5, precision=3):
-        _sorted = sorted(
-            self.basic_stats["mean_dict"].items(),
-            key=lambda item: item[1],
-            reverse=True,
-        )[:num]
-        for _ in _sorted:
-            # TODO: precision cannot be customized
-            print(f"Group: {_[0]}; Mean: {_[1]:0,.3f}")
 
 
 class PeerInstitution(Experiment):
@@ -383,12 +385,6 @@ class PeerInstitution(Experiment):
             reverse=False,
         )[:num]
 
-    def print_sorted_mean(self, num=5):
-        return sorted(
-            self.basic_stats["mean_dict"].items(),
-            key=lambda item: item[1],
-            reverse=True,
-        )[:num]
 
 
 class Parakeet(Experiment):
