@@ -617,4 +617,5 @@ def filter_by_year(g, from_year=1946, to_year=2006, top_n=70):
     # todo: check if "in" or "out" (I think it is "in")
     node_indices = np.argsort(g.degree_property_map("in").a, axis=0)[-top_n:]
     vcond = lambda v: g.vp["vindex"][v] in node_indices
+
     return gt.GraphView(g, efilt=cond, vfilt=lambda v: vcond(v))

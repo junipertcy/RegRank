@@ -255,42 +255,39 @@ class PeerInstitution(Experiment):
         unitid2nodeid = dict()
         counter = 0
         unitid_set = set()
-        peer_unitid_set = set()
         for _d in d:
             _unitid = _d["unitid"]
-            
+
             if not _unitid in unitid_set:
                 result = client["peer-institutions"]["nodes"].find_one(
                     {"unitid": str(_unitid)}
                 )
-                if result is None:
-                    continue
-                else:
+                if result is not None:
                     unitid_set.add(_unitid)
+                else:
+                    continue  # skip this edge
+
+            _peer_unitid = _d["peer_unitid"]
+            if not _peer_unitid in unitid_set:
+                result = client["peer-institutions"]["nodes"].find_one(
+                    {"unitid": str(_peer_unitid)}
+                )
+                if result is not None:
+                    unitid_set.add(_peer_unitid)
+                else:
+                    continue  # skip this edge
 
             src = int(_unitid)
             if src not in unitid2nodeid:
                 unitid2nodeid[src] = counter
                 counter += 1
 
-            _peer_unitid = _d["peer_unitid"]
-
-            if not _peer_unitid in peer_unitid_set:
-                result = client["peer-institutions"]["nodes"].find_one(
-                    {"unitid": str(_peer_unitid)}
-                )
-                if result is None:
-                    continue
-                else:
-                    peer_unitid_set.add(_peer_unitid)
-
             tar = int(_peer_unitid)
             if tar not in unitid2nodeid:
                 unitid2nodeid[tar] = counter
                 counter += 1
 
-            if unitid2nodeid[tar] != unitid2nodeid[src]:
-                self.g.add_edge(unitid2nodeid[src], unitid2nodeid[tar])
+            self.g.add_edge(unitid2nodeid[src], unitid2nodeid[tar])
         inv_unitid2nodeid = {v: k for k, v in unitid2nodeid.items()}
         #     if np.random.random() < 0.1:
         #         self.g.add_edge(np.random.randint(231), np.random.randint(231))
@@ -345,21 +342,62 @@ class PeerInstitution(Experiment):
         # gt.draw_hierarchy(state)
         gt.graph_draw(self.g)
 
-    def plot_hist(self, bin_count=20, legend=False):
+    def plot_hist(self, bin_count=20, legend=False, saveto=None):
+        from scipy.stats import gaussian_kde
         hstack = []
         for key in self.data_goi.keys():
             hstack.append(self.data_goi[key])
 
         bins = np.histogram(np.concatenate(hstack), bins=bin_count)[1]
 
+        c18toMEANING = dict()
+        c18toMEANING["15"] = ("R1", "#d73027")              # Mean: 0.882
+        c18toMEANING["21"] = ("B:A&S", "#fc8d59")           # Mean: 0.245
+        c18toMEANING["16"] = ("R2", "#fee090")              # Mean: 0.136
+
+        c18toMEANING["30"] = ("S:AMD", "#AAAAAA")           # Mean: -0.133  
+        c18toMEANING["17"] = ("R3", "#AAAAAA")              # Mean: -0.133
+        c18toMEANING["23"] = ("Bacc/Asso", "#AAAAAA")        # Mean: -0.133
+        c18toMEANING["18"] = ("M:Large", "#AAAAAA")          # Mean: -0.133
+        c18toMEANING["24"] = ("S:Faith-Related", "#AAAAAA")  # Mean: -0.133
+        c18toMEANING["26"] = ("S:Health", "#AAAAAA")         # Mean: -0.133
+        c18toMEANING["27"] = ("S:Engineer", "#AAAAAA")       # Mean: -0.133
+        c18toMEANING["28"] = ("S:OtherTech", "#AAAAAA")      # Mean: -0.133
+        c18toMEANING["32"] = ("S:Other", "#AAAAAA")          # Mean: -0.133
+        c18toMEANING["33"] = ("Tribal", "#AAAAAA")           # Mean: -0.133
+        c18toMEANING["29"] = ("S:Business", "#AAAAAA")       # Mean: -0.133
+
+        c18toMEANING["19"] = ("M:Medium", "#e0f3f8")         # Mean: -0.197
+        
+        c18toMEANING["20"] = ("M:Small", "#91bfdb")          # Mean: -0.250
+        c18toMEANING["22"] = ("B:Diverse", "#4575b4")        # Mean: -0.278
+
+
         for key in self.data_goi.keys():
             data = np.array(self.data_goi[key]).reshape(-1,)
-            plt.hist(data, bins, label=key, alpha=0.5, edgecolor='white', linewidth=1.2)
+            print(np.mean(data))
+            plt.axvline(np.mean(data), label=c18toMEANING[str(key)][0], color=c18toMEANING[str(key)][1])
+            # kernel = gaussian_kde(data)
+            # plt.plot(bins, kernel(bins), color=c18toMEANING[str(key)][1])
+
+            plt.hist(data, bins, alpha=0.8, edgecolor='white', linewidth=1.2, color=c18toMEANING[str(key)][1], zorder=np.mean(data), density=False)
         
-        plt.ylabel("frequency")
+        plt.rcParams["figure.figsize"] = [7, 4]  # or 7, 4 or 10,8
+        plt.rcParams["lines.linewidth"] = 2
+        plt.rcParams["lines.markersize"] = 4
+        plt.rcParams["mathtext.fontset"] = "cm"
+        plt.rcParams.update({"font.size": 14})
+        plt.rcParams["font.family"] = "Helvetica"
+
+        plt.tick_params(axis="y",direction="in", length=5, which="both")
+        plt.tick_params(axis="x",direction="in", length=5, which="both")
+        
+        plt.ylabel("Frequency")
         plt.xlabel("SpringRank")
         if legend:
             plt.legend()
+        if saveto is not None:
+            plt.savefig(saveto, bbox_inches="tight")
 
     def _compute_collection_by_goi(self, sslc, dual_v=None, primal_s=None):
         if dual_v is not None and primal_s is not None:

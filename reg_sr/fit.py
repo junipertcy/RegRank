@@ -101,6 +101,8 @@ class rSpringRank(object):
                 self.fo_setup["acceleration"] = kwargs.get("acceleration", False)
                 self.fo_setup["x0"] = kwargs.get("x0", np.random.rand(self.sslc.ell.shape[0], 1)).reshape(-1, 1)
                 self.fo_setup["Lip_c"] = kwargs.get("Lip_c", self.sslc.find_Lipschitz_constant())
+                self.fo_setup["maxIters"] = kwargs.get("maxIters", 1e6)
+                self.fo_setup["tol"] = kwargs.get("tol", 1e-14)
                 dual, _ = gradientDescent(
                     self.fo_setup["f"],
                     self.fo_setup["grad"],
@@ -109,8 +111,8 @@ class rSpringRank(object):
                     prox_obj=self.fo_setup["prox_fcn"],
                     stepsize=self.fo_setup["Lip_c"] ** -1,
                     printEvery=self.fo_setup["printEvery"],
-                    maxIters=1e6,
-                    tol=1e-14,  # orig 1e-14
+                    maxIters=self.fo_setup["maxIters"],
+                    tol=self.fo_setup["tol"],  # orig 1e-14
                     # errorFunction=errFcn,
                     saveHistory=True,
                     linesearch=self.fo_setup["linesearch"],
@@ -162,7 +164,7 @@ class rSpringRank(object):
                 self.fo_setup["acceleration"] = kwargs.get("acceleration", False)
                 self.fo_setup["x0"] = kwargs.get("x0", np.random.rand(self.sslc.ell.shape[0], 1)).reshape(-1, 1)
                 self.fo_setup["Lip_c"] = kwargs.get("Lip_c", self.sslc.find_Lipschitz_constant())
-
+                self.fo_setup["maxIters"] = kwargs.get("maxIters", 1e5)
                 dual_time, _ = gradientDescent(
                     self.fo_setup["f"],
                     self.fo_setup["grad"],
@@ -171,7 +173,7 @@ class rSpringRank(object):
                     prox_obj=self.fo_setup["prox_fcn"],
                     stepsize=self.fo_setup["Lip_c"] ** -1,
                     printEvery=self.fo_setup["printEvery"],
-                    maxIters=1e5,
+                    maxIters=self.fo_setup["maxIters"],
                     tol=1e-14,  # orig 1e-14
                     # errorFunction=errFcn,
                     saveHistory=True,

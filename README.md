@@ -22,7 +22,7 @@ First steps
 $ pip install regularized-springrank
 ```
 
-In your Python console, `simplicial-test` is invoked using:
+In your Python console, `Regularized-SpringRank` is invoked using:
 
 ```python
 >>> from reg_sr import rSpringRank, PhDExchange
