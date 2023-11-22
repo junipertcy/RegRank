@@ -1,9 +1,9 @@
-# Regularized-SpringRank
+# rSpringRank
 
-[![license](https://img.shields.io/badge/license-LGPL-green.svg?style=flat)](https://github.com/junipertcy/Regularized-SpringRank/blob/main/COPYING)
+[![license](https://img.shields.io/badge/license-LGPL-green.svg?style=flat)](https://github.com/junipertcy/rSpringRank/blob/main/LICENSE)
 
 
-**Regularized_SpringRank** implements a collection of regularized, convex models (+solvers) that allow the inference of hierarchical structure in a directed network, which exists due to dominance, social status, or prestige. Specifically, this work leverages the time-varying structure and/or the node metadata present in the data set.
+**rSpringRank** implements a collection of regularized, convex models (+solvers) that allow the inference of hierarchical structure in a directed network, which exists due to dominance, social status, or prestige. Specifically, this work leverages the time-varying structure and/or the node metadata present in the data set.
 
 This is the software repository behind the paper:
 * Tzu-Chi Yen and Stephen Becker, *Regularized methods for efficient ranking in networks*, in preparation.
@@ -14,15 +14,21 @@ This is the software repository behind the paper:
 * For software-related bugs, issues, or suggestions, please use [Issues](https://).
 
 
-First steps
------------
-`Regularized-SpringRank` _will be_ on PyPI. To start, hit this command on the shell:
 
-```sh
-$ pip install regularized-springrank
+Installation
+------------
+**rSpringRank** is available on PyPi:
+```
+pip install rSpringRank
 ```
 
-In your Python console, `Regularized-SpringRank` is invoked using:
+The dependencies needed to use graph-tool-based input are not installed by default. You will need to install:
+* Graph-tool: https://graph-tool.skewed.de/
+
+
+First steps
+-----------
+In your Python console, `rSpringRank` is invoked using:
 
 ```python
 >>> from reg_sr import rSpringRank, PhDExchange
@@ -59,3 +65,8 @@ TODO.
 Acknowledgement
 ---------------
 TODO.
+
+
+License
+-------
+**rSpringRank** is open-source and licensed under the [GNU Lesser General Public License v3.0](https://www.gnu.org/licenses/lgpl-3.0.en.html).

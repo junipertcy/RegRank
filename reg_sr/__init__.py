@@ -27,8 +27,8 @@ from .regularizers import *
 from .utils import *
 from .experiments import *
 
-__package__ = 'regularized_springrank'
-__title__ = 'regularized_springrank: regularized methods for efficient ranking in networks.'
+__package__ = 'rSpringRank'
+__title__ = 'rSpringRank: Regularized methods for efficient ranking in networks.'
 __description__ = ''
 __copyright__ = 'Copyright (C) 2023 Tzu-Chi Yen'
 __license__ = "LGPL version 3 or above"

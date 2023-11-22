@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "rSpringRank"
 authors = [{ name = "Tzu-Chi Yen", email = "tzuchi.yen@colorado.edu" }]
 description = "Regularized methods for efficient ranking in networks"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 keywords = [
     'network-analysis',
     'convex-optimization',
@@ -23,6 +23,7 @@ classifiers = [
     'Operating System :: POSIX',
     'Operating System :: Unix',
     'Operating System :: MacOS',
+    'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
@@ -33,7 +34,15 @@ classifiers = [
 
 dynamic = ["version"]
 
-dependencies = ["networkx==2.8.8"]
+dependencies = [
+    "networkx==2.8.8",
+    "scipy==1.11.4",
+    "cvxpy==1.4.1",
+    "matplotlib==3.8.2",
+    "numba==0.58.1",
+    "bson==0.5.10",
+    "pymongo==4.6.0"
+]
 
 [project.optional-dependencies]
 dev = ["pytest==7.4.3", "click==8.1.7", "sphinx==7.2.6"]
