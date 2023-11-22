@@ -1,3 +1,7 @@
+test-sdist/
+test-wheel/
+*_version.py
+*.pkl
 env
 .eggs
 *.pyc

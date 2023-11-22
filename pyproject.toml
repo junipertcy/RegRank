@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rSpringRank"
+authors = [{ name = "Tzu-Chi Yen", email = "tzuchi.yen@colorado.edu" }]
+description = "Regularized methods for efficient ranking in networks"
+requires-python = ">=3.10"
+keywords = [
+    'network-analysis',
+    'convex-optimization',
+    'ranking-algorithm',
+    'proximal-gradient-method',
+    'denoising',
+]
+classifiers = [
+    'Development Status :: 5 - Production/Stable',
+    'Intended Audience :: Science/Research',
+    'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
+    'Natural Language :: English',
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: POSIX',
+    'Operating System :: Unix',
+    'Operating System :: MacOS',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3 :: Only',
+    'Topic :: Scientific/Engineering',
+    'Topic :: Software Development :: Libraries',
+]
+
+dynamic = ["version"]
+
+dependencies = ["networkx==2.8.8"]
+
+[project.optional-dependencies]
+dev = ["pytest==7.4.3", "click==8.1.7", "sphinx==7.2.6"]
+
+[project.urls]
+repository = 'https://github.com/junipertcy/rSpringRank'
+documentation = 'https://docs.netscied.tw/rSpringRank/index.html'
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[tool.setuptools]
+packages = ["reg_sr"]
+
+[tool.setuptools_scm]
+write_to = "reg_sr/_version.py"
