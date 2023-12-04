@@ -17,7 +17,7 @@ This is the software repository behind the paper:
 
 Installation
 ------------
-**rSpringRank** is available on PyPi:
+**rSpringRank** is available on PyPI:
 ```
 pip install rSpringRank
 ```
