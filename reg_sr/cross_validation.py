@@ -35,6 +35,7 @@ from reg_sr.regularizers import *
 from reg_sr.experiments import *
 import reg_sr
 from reg_sr.fit import rSpringRank
+import graph_tool.all as gt
 
 from numba import njit
 

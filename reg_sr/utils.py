@@ -1,4 +1,4 @@
-# import graph_tool.all as gt
+import graph_tool.all as gt
 import numpy as np
 from numba import jit
 from scipy.sparse import csr_matrix, csc_matrix, issparse

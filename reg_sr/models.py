@@ -19,7 +19,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 import reg_sr.losses as losses
 import reg_sr.regularizers as regularizers
-# import graph_tool.all as gt
+import graph_tool.all as gt
 
 import numpy as np
 from numba import jit

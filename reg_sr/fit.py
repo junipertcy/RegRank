@@ -21,11 +21,13 @@
 from scipy.sparse.linalg import lsqr
 import numpy as np
 
+
 from reg_sr.cvx import *
 from reg_sr.utils import *
 from reg_sr.losses import *
 from reg_sr.regularizers import *
 from reg_sr.firstOrderMethods import gradientDescent
+import graph_tool.all as gt
 
 
 class rSpringRank(object):
@@ -66,14 +68,15 @@ class rSpringRank(object):
                 self.result["primal"] = primal
                 self.result["f_primal"] = problem.value
             else:
-                B, b = cast2sum_squares_form(
-                    data,
-                    alpha=self.alpha
+                B, b = cast2sum_squares_form(data, alpha=self.alpha)
+                self.result["primal"] = lsqr(B, b.toarray())[:1][0].reshape(
+                    -1,
                 )
-                self.result["primal"] = lsqr(B, b.toarray())[:1][0].reshape(-1,)
                 # compute primal functional value
                 f_all_primal = lambda x: 0.5 * norm(B @ x - b) ** 2
-                self.result["f_primal"] = f_all_primal(self.result["primal"].reshape(-1, 1))
+                self.result["f_primal"] = f_all_primal(
+                    self.result["primal"].reshape(-1, 1)
+                )
 
         elif self.method == "annotated":
             # In this case, we use the dual-based proximal gradient descent algorithm
@@ -85,9 +88,9 @@ class rSpringRank(object):
                 self.sslc.setup(data, alpha=self.alpha)
                 self.fo_setup["f"] = lambda x: self.sslc.evaluate(x)
                 self.fo_setup["grad"] = lambda x: self.sslc.prox(x)
-                self.fo_setup["prox"] = lambda x, t: same_mean_reg(lambd=self.lambd).prox(
-                    x, t
-                )
+                self.fo_setup["prox"] = lambda x, t: same_mean_reg(
+                    lambd=self.lambd
+                ).prox(x, t)
                 self.fo_setup["prox_fcn"] = lambda x: same_mean_reg(
                     lambd=self.lambd
                 ).evaluate(x)
@@ -99,8 +102,12 @@ class rSpringRank(object):
                     "linesearch", False
                 )  # do not use True, still buggy
                 self.fo_setup["acceleration"] = kwargs.get("acceleration", False)
-                self.fo_setup["x0"] = kwargs.get("x0", np.random.rand(self.sslc.ell.shape[0], 1)).reshape(-1, 1)
-                self.fo_setup["Lip_c"] = kwargs.get("Lip_c", self.sslc.find_Lipschitz_constant())
+                self.fo_setup["x0"] = kwargs.get(
+                    "x0", np.random.rand(self.sslc.ell.shape[0], 1)
+                ).reshape(-1, 1)
+                self.fo_setup["Lip_c"] = kwargs.get(
+                    "Lip_c", self.sslc.find_Lipschitz_constant()
+                )
                 self.fo_setup["maxIters"] = kwargs.get("maxIters", 1e6)
                 self.fo_setup["tol"] = kwargs.get("tol", 1e-14)
                 dual, _ = gradientDescent(
@@ -125,9 +132,15 @@ class rSpringRank(object):
                 self.result["fo_output"] = _
 
                 # compute primal functional value
-                f_all_primal = lambda x: 0.5 * norm(self.sslc.B @ x - self.sslc.b) ** 2 + self.lambd * np.linalg.norm(self.sslc.ell @ x, 1)
-                self.result["f_primal"] = f_all_primal(self.result["primal"].reshape(-1, 1))
-                self.result["f_dual"] = self.sslc.evaluate(self.result["dual"].reshape(-1, 1))
+                f_all_primal = lambda x: 0.5 * norm(
+                    self.sslc.B @ x - self.sslc.b
+                ) ** 2 + self.lambd * np.linalg.norm(self.sslc.ell @ x, 1)
+                self.result["f_primal"] = f_all_primal(
+                    self.result["primal"].reshape(-1, 1)
+                )
+                self.result["f_dual"] = self.sslc.evaluate(
+                    self.result["dual"].reshape(-1, 1)
+                )
         elif self.method == "time::l1":
             # In this case, we cast to sum-of-squares form
             # and use the dual-based proximal gradient descent algorithm
@@ -162,8 +175,12 @@ class rSpringRank(object):
                     "linesearch", False
                 )  # do not use True, still buggy
                 self.fo_setup["acceleration"] = kwargs.get("acceleration", False)
-                self.fo_setup["x0"] = kwargs.get("x0", np.random.rand(self.sslc.ell.shape[0], 1)).reshape(-1, 1)
-                self.fo_setup["Lip_c"] = kwargs.get("Lip_c", self.sslc.find_Lipschitz_constant())
+                self.fo_setup["x0"] = kwargs.get(
+                    "x0", np.random.rand(self.sslc.ell.shape[0], 1)
+                ).reshape(-1, 1)
+                self.fo_setup["Lip_c"] = kwargs.get(
+                    "Lip_c", self.sslc.find_Lipschitz_constant()
+                )
                 self.fo_setup["maxIters"] = kwargs.get("maxIters", 1e5)
                 dual_time, _ = gradientDescent(
                     self.fo_setup["f"],
@@ -212,9 +229,13 @@ class rSpringRank(object):
             if self.cvxpy:
                 self.M = kwargs.get("M", 1)
                 self.incl_reg = kwargs.get("incl_reg", True)
-                h_cvx = huber_cvx(data, alpha=self.alpha, M=self.M, incl_reg=self.incl_reg)
+                h_cvx = huber_cvx(
+                    data, alpha=self.alpha, M=self.M, incl_reg=self.incl_reg
+                )
                 primal_s = cp.Variable((data.num_vertices(), 1))
-                problem = cp.Problem(cp.Minimize(h_cvx.objective_fn_primal(primal_s)))  # for huber
+                problem = cp.Problem(
+                    cp.Minimize(h_cvx.objective_fn_primal(primal_s))
+                )  # for huber
                 try:
                     problem.solve(verbose=False)
                 except cp.SolverError:
@@ -225,12 +246,16 @@ class rSpringRank(object):
                         abstol=1e-13,
                         max_iters=1e5,
                     )
-                primal = primal_s.value.reshape(-1, )
+                primal = primal_s.value.reshape(
+                    -1,
+                )
                 self.result["primal"] = primal
                 self.result["f_primal"] = problem.value
             else:
-                raise NotImplementedError("First-order solver for Huber norm has not been not implemented. " +
-                                          "Please set explicitly that cvxpy=True.")
+                raise NotImplementedError(
+                    "First-order solver for Huber norm has not been not implemented. "
+                    + "Please set explicitly that cvxpy=True."
+                )
         else:
             raise NotImplementedError("Method not implemented.")
 

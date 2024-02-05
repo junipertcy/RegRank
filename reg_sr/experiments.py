@@ -30,7 +30,7 @@ client = MongoClient("mongodb://%s:%s@%s" % (username, password, port))
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from itertools import combinations
-# import graph_tool.all as gt
+import graph_tool.all as gt
 import numpy as np
 from math import comb
 from reg_sr.losses import *
