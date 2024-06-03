@@ -22,7 +22,7 @@ import numpy as np
 from numpy.linalg import norm
 import cvxpy as cp
 from numba import njit
-from reg_sr.utils import (
+from rSpringRank.utils import (
     compute_cache_from_data,
     cast2sum_squares_form,
     compute_cache_from_data_t,

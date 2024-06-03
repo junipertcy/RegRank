@@ -33,7 +33,7 @@ from itertools import combinations
 import graph_tool.all as gt
 import numpy as np
 from math import comb
-from reg_sr.losses import *
+from rSpringRank.losses import *
 
 
 # TODO, see

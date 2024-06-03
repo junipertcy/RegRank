@@ -8,18 +8,18 @@ from numpy.random import default_rng
 
 from scipy.sparse.linalg import inv, LinearOperator, aslinearoperator, lsqr
 
-from reg_sr.utils import *
-from reg_sr.losses import *
-from reg_sr.regularizers import *
-from reg_sr.experiments import *
-from reg_sr.firstOrderMethods import (
+from rSpringRank.utils import *
+from rSpringRank.losses import *
+from rSpringRank.regularizers import *
+from rSpringRank.experiments import *
+from rSpringRank.firstOrderMethods import (
     createTestProblem,
     gradientDescent,
     lassoSolver,
     runAllTestProblems,
 )
 
-from reg_sr.cvx import *
+from rSpringRank.cvx import *
 
 # import gurobipy as gp
 # HOW TO SUPPRESS GUROBI OUTPUT (Set parameter Username)?
@@ -76,7 +76,7 @@ def compute(goi):
     ### CVXPY; PRIMAL ###
     primal_s = cp.Variable((g.num_vertices(), 1))
     problem = cp.Problem(cp.Minimize(sm_cvx.objective_fn_primal(primal_s, lambd=1)))
-    problem.solve(solver=cp.GUROBI, verbose=False, reltol=1e-14, abstol=1e-14, max_iters=1e5)
+    problem.solve(solver=cp.GUROBI, verbose=False)
 
     ### CVXPY; DUAL ###
     n = (pde.num_dual_vars, 1)
@@ -84,7 +84,7 @@ def compute(goi):
     dual_v = cp.Variable(n)
     constraints = [ cp.norm( dual_v, np.inf ) <= tau ]
     problem = cp.Problem(cp.Minimize(sm_cvx.objective_fn(dual_v)), constraints )
-    problem.solve(solver=cp.GUROBI, verbose=False, reltol=1e-14, abstol=1e-14, max_iters=1e5)
+    problem.solve(solver=cp.GUROBI, verbose=False)
 
 
     ### CODE FOR BENCHMARKING ###

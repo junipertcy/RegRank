@@ -36,7 +36,7 @@ dynamic = ["version"]
 dependencies = [ "networkx", "scipy", "cvxpy", "matplotlib", "numba", "bson", "pymongo"]
 
 [project.optional-dependencies]
-dev = ["pytest==8.2.1", "click==8.1.7", "sphinx==7.2.6"]
+dev = ["pytest", "click", "sphinx"]
 
 [project.urls]
 repository = 'https://github.com/junipertcy/rSpringRank'
@@ -47,10 +47,10 @@ file = "README.md"
 content-type = "text/markdown"
 
 [tool.setuptools]
-packages = ["reg_sr"]
+packages = ["rSpringRank"]
 
 [tool.setuptools_scm]
-write_to = "reg_sr/_version.py"
+write_to = "rSpringRank/_version.py"
 
 [tool.pixi.project]
 channels = ["conda-forge"]
@@ -64,3 +64,19 @@ default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
 
 [tool.pixi.tasks]
+
+[tool.pixi.dependencies]
+graph-tool = ">=2.68,<3"
+cvxpy = ">=1.5.1,<1.6"
+networkx = ">=3.3,<4"
+scipy = ">=1.13.1,<1.14"
+matplotlib = ">=3.8.4,<3.9"
+numba = ">=0.59.1,<0.60"
+bson = ">=0.5.9,<0.6"
+pymongo = ">=4.7.2,<4.8"
+seaborn = ">=0.13.2,<0.14"
+
+[tool.pixi.build-dependencies]
+pytest = ">=8.2.1,<8.3"
+click = ">=8.1.7,<8.2"
+sphinx = ">=7.3.7,<7.4"

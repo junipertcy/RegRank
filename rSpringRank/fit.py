@@ -22,11 +22,11 @@ from scipy.sparse.linalg import lsqr
 import numpy as np
 
 
-from reg_sr.cvx import *
-from reg_sr.utils import *
-from reg_sr.losses import *
-from reg_sr.regularizers import *
-from reg_sr.firstOrderMethods import gradientDescent
+from rSpringRank.cvx import *
+from rSpringRank.utils import *
+from rSpringRank.losses import *
+from rSpringRank.regularizers import *
+from rSpringRank.firstOrderMethods import gradientDescent
 import graph_tool.all as gt
 
 

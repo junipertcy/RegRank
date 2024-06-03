@@ -56,7 +56,12 @@ As you noticed, most groups have the same mean SpringRank. This is the regulariz
 
 
 ### Development
-TODO.
+The library uses pytest to ensure correctness. The test suite depends on [mosek](https://www.mosek.com/) and [gurobi](https://www.gurobi.com/).
+
+```python
+pytest
+```
+
 
 Related links
 -------------

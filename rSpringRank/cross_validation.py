@@ -29,12 +29,12 @@ from scipy.optimize import minimize_scalar, minimize
 from scipy.optimize import fsolve
 from scipy.interpolate import interp1d
 
-from reg_sr.utils import *
-from reg_sr.losses import *
-from reg_sr.regularizers import *
-from reg_sr.experiments import *
-import reg_sr
-from reg_sr.fit import rSpringRank
+from rSpringRank.utils import *
+from rSpringRank.losses import *
+from rSpringRank.regularizers import *
+from rSpringRank.experiments import *
+import rSpringRank
+from rSpringRank.fit import rSpringRank
 import graph_tool.all as gt
 
 from numba import njit

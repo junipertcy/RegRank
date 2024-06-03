@@ -8,19 +8,19 @@ from numpy.random import default_rng
 
 from scipy.sparse.linalg import inv, LinearOperator, aslinearoperator, lsqr
 
-from reg_sr.utils import *
-from reg_sr.losses import *
-from reg_sr.regularizers import *
-from reg_sr.experiments import *
-from reg_sr.firstOrderMethods import (
+from rSpringRank.utils import *
+from rSpringRank.losses import *
+from rSpringRank.regularizers import *
+from rSpringRank.experiments import *
+from rSpringRank.firstOrderMethods import (
     createTestProblem,
     gradientDescent,
     lassoSolver,
     runAllTestProblems,
 )
 
-from reg_sr.cvx import *
-import reg_sr
+from rSpringRank.cvx import *
+import rSpringRank
 
 
 def compute(obj, alpha):
@@ -33,7 +33,7 @@ def compute(obj, alpha):
     
     v_cvx_output = primal_s.value.reshape(-1,)
 
-    sr = reg_sr.SpringRank(alpha=alpha)
+    sr = rSpringRank.SpringRank(alpha=alpha)
 
     result = sr.fit(g)
     bicgstab_output = result["rank"]

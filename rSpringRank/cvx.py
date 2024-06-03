@@ -24,7 +24,7 @@ import numpy as np
 
 
 import clarabel
-from reg_sr.losses import *
+from rSpringRank.losses import *
 
 
 class same_mean_cvx(object):
