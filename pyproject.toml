@@ -33,18 +33,10 @@ classifiers = [
 
 dynamic = ["version"]
 
-dependencies = [
-    "networkx==2.8.8",
-    "scipy==1.11.4",
-    "cvxpy==1.4.1",
-    "matplotlib==3.8.2",
-    "numba==0.58.1",
-    "bson==0.5.10",
-    "pymongo==4.6.0"
-]
+dependencies = [ "networkx", "scipy", "cvxpy", "matplotlib", "numba", "bson", "pymongo"]
 
 [project.optional-dependencies]
-dev = ["pytest==7.4.3", "click==8.1.7", "sphinx==7.2.6"]
+dev = ["pytest==8.2.1", "click==8.1.7", "sphinx==7.2.6"]
 
 [project.urls]
 repository = 'https://github.com/junipertcy/rSpringRank'
@@ -59,3 +51,16 @@ packages = ["reg_sr"]
 
 [tool.setuptools_scm]
 write_to = "reg_sr/_version.py"
+
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[tool.pixi.pypi-dependencies]
+rSpringRank = { path = ".", editable = true }
+
+[tool.pixi.environments]
+default = { solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }
+
+[tool.pixi.tasks]
