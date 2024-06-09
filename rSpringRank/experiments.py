@@ -18,7 +18,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from bson import ObjectId
 from pymongo import MongoClient
 
 username = "tzuchi"
@@ -48,7 +47,7 @@ class Experiment:
 
     def draw(self):
         pass
-    
+
     def print_sorted_mean(self, num=5, precision=3):
         _sorted = sorted(
             self.basic_stats["mean_dict"].items(),
@@ -176,15 +175,17 @@ class PhDExchange(Experiment):
         bins = np.histogram(np.concatenate(hstack), bins=bin_count)[1]
 
         for key in self.data_goi.keys():
-            data = np.array(self.data_goi[key]).reshape(-1,)
-            plt.hist(data, bins, label=key, alpha=0.5, edgecolor='white', linewidth=1.2)
-        
+            data = np.array(self.data_goi[key]).reshape(
+                -1,
+            )
+            plt.hist(data, bins, label=key, alpha=0.5, edgecolor="white", linewidth=1.2)
+
         plt.ylabel("Frequency")
         plt.xlabel("SpringRank")
         if legend:
             plt.legend()
 
-    def _compute_collection_by_goi(self, sslc, dual_v=None, primal_s=None):
+    def _compute_collection_by_goi(self, sslc=None, dual_v=None, primal_s=None):
         if dual_v is not None and primal_s is not None:
             raise AttributeError("Only use either dual_v or primal_s.")
         elif dual_v is None and primal_s is None:
@@ -201,7 +202,7 @@ class PhDExchange(Experiment):
         self.data_goi = collection_by_goi
         return collection_by_goi
 
-    def compute_basic_stats(self, sslc, dual_v=None, primal_s=None):
+    def compute_basic_stats(self, sslc=None, dual_v=None, primal_s=None):
         self.basic_stats["deviation_dict"] = dict()
         if self.data_goi is None:
             self._compute_collection_by_goi(sslc, dual_v=dual_v, primal_s=primal_s)
@@ -232,7 +233,6 @@ class PhDExchange(Experiment):
         )[:num]
 
 
-
 class PeerInstitution(Experiment):
     def __init__(self):
         self.g = gt.Graph()
@@ -258,7 +258,7 @@ class PeerInstitution(Experiment):
         for _d in d:
             _unitid = _d["unitid"]
 
-            if not _unitid in unitid_set:
+            if _unitid not in unitid_set:
                 result = client["peer-institutions"]["nodes"].find_one(
                     {"unitid": str(_unitid)}
                 )
@@ -268,7 +268,7 @@ class PeerInstitution(Experiment):
                     continue  # skip this edge
 
             _peer_unitid = _d["peer_unitid"]
-            if not _peer_unitid in unitid_set:
+            if _peer_unitid not in unitid_set:
                 result = client["peer-institutions"]["nodes"].find_one(
                     {"unitid": str(_peer_unitid)}
                 )
@@ -308,10 +308,9 @@ class PeerInstitution(Experiment):
             self.g.vp["goi"][node] = pi_id[goi]
             self.g.vp["instnm"][node] = pi_id["instnm"]
 
-
         return self.g
 
-    def compute_basic_stats(self, sslc, dual_v=None, primal_s=None):
+    def compute_basic_stats(self, sslc=None, dual_v=None, primal_s=None):
         self.basic_stats["deviation_dict"] = dict()
         if self.data_goi is None:
             self._compute_collection_by_goi(sslc, dual_v=dual_v, primal_s=primal_s)
@@ -343,7 +342,6 @@ class PeerInstitution(Experiment):
         gt.graph_draw(self.g)
 
     def plot_hist(self, bin_count=20, legend=False, saveto=None):
-        from scipy.stats import gaussian_kde
         hstack = []
         for key in self.data_goi.keys():
             hstack.append(self.data_goi[key])
@@ -351,37 +349,51 @@ class PeerInstitution(Experiment):
         bins = np.histogram(np.concatenate(hstack), bins=bin_count)[1]
 
         c18toMEANING = dict()
-        c18toMEANING["15"] = ("R1", "#d73027")              # Mean: 0.882
-        c18toMEANING["21"] = ("B:A&S", "#fc8d59")           # Mean: 0.245
-        c18toMEANING["16"] = ("R2", "#fee090")              # Mean: 0.136
+        c18toMEANING["15"] = ("R1", "#d73027")  # Mean: 0.882
+        c18toMEANING["21"] = ("B:A&S", "#fc8d59")  # Mean: 0.245
+        c18toMEANING["16"] = ("R2", "#fee090")  # Mean: 0.136
 
-        c18toMEANING["30"] = ("S:AMD", "#AAAAAA")           # Mean: -0.133  
-        c18toMEANING["17"] = ("R3", "#AAAAAA")              # Mean: -0.133
-        c18toMEANING["23"] = ("Bacc/Asso", "#AAAAAA")        # Mean: -0.133
-        c18toMEANING["18"] = ("M:Large", "#AAAAAA")          # Mean: -0.133
+        c18toMEANING["30"] = ("S:AMD", "#AAAAAA")  # Mean: -0.133
+        c18toMEANING["17"] = ("R3", "#AAAAAA")  # Mean: -0.133
+        c18toMEANING["23"] = ("Bacc/Asso", "#AAAAAA")  # Mean: -0.133
+        c18toMEANING["18"] = ("M:Large", "#AAAAAA")  # Mean: -0.133
         c18toMEANING["24"] = ("S:Faith-Related", "#AAAAAA")  # Mean: -0.133
-        c18toMEANING["26"] = ("S:Health", "#AAAAAA")         # Mean: -0.133
-        c18toMEANING["27"] = ("S:Engineer", "#AAAAAA")       # Mean: -0.133
-        c18toMEANING["28"] = ("S:OtherTech", "#AAAAAA")      # Mean: -0.133
-        c18toMEANING["32"] = ("S:Other", "#AAAAAA")          # Mean: -0.133
-        c18toMEANING["33"] = ("Tribal", "#AAAAAA")           # Mean: -0.133
-        c18toMEANING["29"] = ("S:Business", "#AAAAAA")       # Mean: -0.133
+        c18toMEANING["26"] = ("S:Health", "#AAAAAA")  # Mean: -0.133
+        c18toMEANING["27"] = ("S:Engineer", "#AAAAAA")  # Mean: -0.133
+        c18toMEANING["28"] = ("S:OtherTech", "#AAAAAA")  # Mean: -0.133
+        c18toMEANING["32"] = ("S:Other", "#AAAAAA")  # Mean: -0.133
+        c18toMEANING["33"] = ("Tribal", "#AAAAAA")  # Mean: -0.133
+        c18toMEANING["29"] = ("S:Business", "#AAAAAA")  # Mean: -0.133
 
-        c18toMEANING["19"] = ("M:Medium", "#e0f3f8")         # Mean: -0.197
-        
-        c18toMEANING["20"] = ("M:Small", "#91bfdb")          # Mean: -0.250
-        c18toMEANING["22"] = ("B:Diverse", "#4575b4")        # Mean: -0.278
+        c18toMEANING["19"] = ("M:Medium", "#e0f3f8")  # Mean: -0.197
 
+        c18toMEANING["20"] = ("M:Small", "#91bfdb")  # Mean: -0.250
+        c18toMEANING["22"] = ("B:Diverse", "#4575b4")  # Mean: -0.278
 
         for key in self.data_goi.keys():
-            data = np.array(self.data_goi[key]).reshape(-1,)
+            data = np.array(self.data_goi[key]).reshape(
+                -1,
+            )
             print(np.mean(data))
-            plt.axvline(np.mean(data), label=c18toMEANING[str(key)][0], color=c18toMEANING[str(key)][1])
+            plt.axvline(
+                np.mean(data),
+                label=c18toMEANING[str(key)][0],
+                color=c18toMEANING[str(key)][1],
+            )
             # kernel = gaussian_kde(data)
             # plt.plot(bins, kernel(bins), color=c18toMEANING[str(key)][1])
 
-            plt.hist(data, bins, alpha=0.8, edgecolor='white', linewidth=1.2, color=c18toMEANING[str(key)][1], zorder=np.mean(data), density=False)
-        
+            plt.hist(
+                data,
+                bins,
+                alpha=0.8,
+                edgecolor="white",
+                linewidth=1.2,
+                color=c18toMEANING[str(key)][1],
+                zorder=np.mean(data),
+                density=False,
+            )
+
         plt.rcParams["figure.figsize"] = [7, 4]  # or 7, 4 or 10,8
         plt.rcParams["lines.linewidth"] = 2
         plt.rcParams["lines.markersize"] = 4
@@ -389,9 +401,9 @@ class PeerInstitution(Experiment):
         plt.rcParams.update({"font.size": 14})
         plt.rcParams["font.family"] = "Helvetica"
 
-        plt.tick_params(axis="y",direction="in", length=5, which="both")
-        plt.tick_params(axis="x",direction="in", length=5, which="both")
-        
+        plt.tick_params(axis="y", direction="in", length=5, which="both")
+        plt.tick_params(axis="x", direction="in", length=5, which="both")
+
         plt.ylabel("Frequency")
         plt.xlabel("SpringRank")
         if legend:
@@ -399,7 +411,7 @@ class PeerInstitution(Experiment):
         if saveto is not None:
             plt.savefig(saveto, bbox_inches="tight")
 
-    def _compute_collection_by_goi(self, sslc, dual_v=None, primal_s=None):
+    def _compute_collection_by_goi(self, sslc=None, dual_v=None, primal_s=None):
         if dual_v is not None and primal_s is not None:
             raise AttributeError("Only use either dual_v or primal_s.")
         elif dual_v is None and primal_s is None:
@@ -424,12 +436,11 @@ class PeerInstitution(Experiment):
         )[:num]
 
 
-
 class Parakeet(Experiment):
     def __init__(self):
         super().__init__()
         self.g = gt.Graph()
-    
+
     def get_data(self, path="./data/parakeet/aggXquarter.txt", group="G1"):
         """
         goi: which stratum (metadata of the nodes) that you are looking for?
@@ -458,7 +469,9 @@ class Parakeet(Experiment):
                     id_counter += 1
 
                 for _ in range(int(wins)):
-                    self.g.add_edge(name2id[tar], name2id[src])  # actor wins, so we reverse the edge
+                    self.g.add_edge(
+                        name2id[tar], name2id[src]
+                    )  # actor wins, so we reverse the edge
                     qtrs.append(str(qtr))
 
         id2name = {v: k for k, v in name2id.items()}
@@ -472,5 +485,3 @@ class Parakeet(Experiment):
             self.g.ep["quarter"][_] = qtrs[eid]
 
         return self.g
-
-

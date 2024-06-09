@@ -1,13 +1,12 @@
 import graph_tool.all as gt
 import numpy as np
 from numba import jit
-from scipy.sparse import csr_matrix, csc_matrix, issparse
+from scipy.sparse import csr_matrix, csc_matrix
 from scipy.sparse.linalg import inv
 from itertools import combinations
 from math import comb
 from collections import Counter
-from scipy.linalg import svd
-from scipy.sparse.linalg import svds
+from scipy.linalg import sqrtm 
 import linecache
 from random import sample
 
@@ -87,9 +86,7 @@ def cast2sum_squares_form_t(
             col_b.append(0)
             data_b.append(-A[ind] ** 0.5)
 
-        row += [
-            _ for _ in range((t + 1) * (shape**2) - shape, (t + 1) * (shape**2))
-        ]
+        row += [_ for _ in range((t + 1) * (shape**2) - shape, (t + 1) * (shape**2))]
         col += [_ for _ in range(t * shape, (t + 1) * shape)]
         data += [alpha**0.5] * shape
 
@@ -226,9 +223,7 @@ def cast2sum_squares_form(data, alpha, regularization=True):
         # col_b += [0] * shape
         # data_b += [0] * shape
         B = csr_matrix((data, (row, col)), shape=(shape**2, shape), dtype=np.float64)
-        b = csr_matrix(
-            (data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float64
-        )
+        b = csr_matrix((data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float64)
     else:
         # logger.warning("WARNING: no regularization is used. Are you sure?")
         B = csr_matrix(
@@ -252,22 +247,9 @@ def compute_cache_from_data_t(
         top_n=top_n,
         separate=True,
     )
-
-    # for timewise setting, we always use sparse matrix
-    sparse = True
-
-    # somehow, sparse Bt_B_inv runs faster
-    Bt_B_inv = compute_Bt_B_inv(B, sparse=True)
-    # _, s, Vh = svd(B.todense(), full_matrices=False)
-    if type(B) is not csr_matrix:
-        _, s, Vh = svd(B.todense(), full_matrices=False)
-    else:
-        # this is much slower than the dense counterpart
-        _, s, Vh = svds(
-            B, k=min(B.shape) - 1, solver="arpack"
-        )  # implement svd for sparse matrix
-    Bt_B_invSqrt = Vh.T @ np.diag(1 / s) @ Vh
-
+    # Becase B is sparse, B.T @ B runs fast and is also sparse
+    Bt_B_inv = compute_Bt_B_inv(B)
+    Bt_B_invSqrt = sqrtm(Bt_B_inv.todense())
     return {
         "B": B,
         "b": b,
@@ -293,30 +275,20 @@ def compute_cache_from_data(data, alpha, regularization=True):
     dictionary: _description_
 
     """
-    import datetime
-
     B, b = cast2sum_squares_form(data, alpha, regularization=regularization)
     _ell = compute_ell(data)
-    Bt_B_inv = compute_Bt_B_inv(B, sparse=True)  # expensive step
-    if not issparse(B):  # we do not go this path
-        _, s, Vh = svd(B, full_matrices=False)
-    else:
-        _, s, Vh = svds(
-            B, k=min(B.shape) - 1, solver="arpack"
-        )  # implement svd for sparse matrix
-    Bt_B_invSqrt = Vh.T @ np.diag(1 / s) @ Vh
+    Bt_B_inv = compute_Bt_B_inv(B)
+    Bt_B_invSqrt = sqrtm(Bt_B_inv.todense())
     return {
-        "B": B,
-        "b": b,
-        "ell": _ell,
-        "Bt_B_inv": Bt_B_inv,
-        "Bt_B_invSqrt": Bt_B_invSqrt,
+        "B": B,  # in csr_matrix format and also is sparse
+        "b": b,  # in csr_matrix format and also is sparse
+        "ell": _ell,  # in csr_matrix format and is also sparse
+        "Bt_B_inv": Bt_B_inv,  # in csr_matrix format, but it's actually dense
+        "Bt_B_invSqrt": Bt_B_invSqrt,  # in np.ndarray for and is also dense
     }
 
 
-def compute_Bt_B_inv(B, sparse=True):
-    if not sparse:
-        return np.linalg.inv(B.T @ B)
+def compute_Bt_B_inv(B):
     return inv(B.T @ B)
 
 
@@ -338,7 +310,7 @@ def compute_ell(g, sparse=True):
     if sparse:
         row, col, data = [], [], []
     else:
-        ell = np.zeros([comb(len_classes, 2), len(g.get_vertices())])
+        ell = np.zeros([comb(len_classes, 2), len(g.get_vertices())], dtype=np.float64)
     for idx, (i, j) in enumerate(comb_classes):
         for _, vtx in enumerate(g.vertices()):
             # sometimes we feed g as a gt.GraphView
@@ -448,7 +420,7 @@ def add_erroneous_edges(g, nid=0, times=1, method="single_point_mutation"):
             for node in range(g.num_vertices()):
                 if node != nid:
                     # nid always endorsed by others
-                    g.add_edge(node, nid) 
+                    g.add_edge(node, nid)
 
     elif method == "random_edges":
         # scenario 2: add random edges
@@ -465,7 +437,7 @@ def add_erroneous_edges(g, nid=0, times=1, method="single_point_mutation"):
 def D_operator(s):
     # output = np.zeros(n**2)
     n = len(s)
-    output = np.zeros(n**2 - n)  # if we avoid the zero rows
+    output = np.zeros(n**2 - n, dtype=np.float64)  # if we avoid the zero rows
     k = 0
     for i in range(n):
         for j in range(i):
@@ -486,7 +458,7 @@ def D_operator_reg_t_sparse(a, s):
     if type(a) is not csr_matrix:
         raise TypeError("Please use a `csr_matrix` of scipy.sparse.")
     n = a.shape[0]
-    output_t = np.zeros(n)  # if we avoid the zero rows
+    output_t = np.zeros(n, dtype=np.float64)  # if we avoid the zero rows
 
     for ind in zip(*a.nonzero()):
         i, j = ind[0], ind[1]
@@ -503,7 +475,7 @@ def D_operator_reg_t_sparse(a, s):
 @jit(nopython=True)
 def D_operator_reg_t(a, s):
     n = len(a)
-    output_t = np.zeros(n)  # if we avoid the zero rows
+    output_t = np.zeros(n, dtype=np.float64)  # if we avoid the zero rows
     k = 0
     for i in range(n):
         for j in range(i):
@@ -522,7 +494,7 @@ def D_operator_reg_sparse(a, s):
     if type(a) is not csr_matrix:
         raise TypeError("Please use a `csr_matrix` of scipy.sparse.")
     n = a.shape[0]
-    output = np.zeros(n**2 - n)  # if we avoid the zero rows
+    output = np.zeros(n**2 - n, dtype=np.float64)  # if we avoid the zero rows
     for ind in zip(*a.nonzero()):
         i, j = ind[0], ind[1]
         if i < j:
@@ -536,7 +508,7 @@ def D_operator_reg_sparse(a, s):
 @jit(nopython=True)
 def D_operator_reg(a, s):
     n = len(a)
-    output = np.zeros(n**2 - n)  # if we avoid the zero rows
+    output = np.zeros(n**2 - n, dtype=np.float64)  # if we avoid the zero rows
     k = 0
     for i in range(n):
         for j in range(i):
@@ -553,7 +525,7 @@ def D_operator_b_sparse(a):
     if type(a) is not csr_matrix:
         raise TypeError("Please use a `csr_matrix` of scipy.sparse.")
     n = a.shape[0]
-    output = np.zeros(n**2 - n)  # if we avoid the zero rows
+    output = np.zeros(n**2 - n, dtype=np.float64)  # if we avoid the zero rows
     for ind in zip(*a.nonzero()):
         i, j = ind[0], ind[1]
         if i < j:
@@ -567,7 +539,7 @@ def D_operator_b_sparse(a):
 @jit(nopython=True)
 def D_operator_b(a):
     n = len(a)
-    output = np.zeros(n**2 - n)  # if we avoid the zero rows
+    output = np.zeros(n**2 - n, dtype=np.float64)  # if we avoid the zero rows
     # k = n
     k = 0
     for i in range(n):
@@ -589,8 +561,8 @@ def implicit2explicit(f, a, m, n):
     (for now, assume A is square for simplicity)
     A = A * identity
     """
-    e = np.zeros(n)  # length n vector
-    A = np.zeros((m, n))  # (n ** 2 - n) x n matrix
+    e = np.zeros(n, dtype=np.float64)  # length n vector
+    A = np.zeros((m, n), dtype=np.float64)  # (n ** 2 - n) x n matrix
     for i in range(n):
         # Loop over columns of identity
         e[i] = 1

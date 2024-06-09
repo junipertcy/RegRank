@@ -21,7 +21,6 @@
 import numpy as np
 from numpy.linalg import norm
 import cvxpy as cp
-from numba import njit
 from rSpringRank.utils import (
     compute_cache_from_data,
     cast2sum_squares_form,
@@ -150,7 +149,8 @@ class sum_squared_loss_conj(Loss):
         return L
 
     def evaluate(self, theta):
-        f = lambda x: -self.Bt_B_invSqrt @ (self.ell.T @ x)
+        def f(x):
+            return -self.Bt_B_invSqrt @ (self.ell.T @ x)
         term_1 = (
             0.5
             * norm(f(theta) + self.Bt_B_invSqrt_Btb) ** 2
@@ -210,7 +210,7 @@ class sum_squared_loss_conj(Loss):
 
     def dual2primal(self, v):
         d = self.Bt_B_inv @ (-self.ell.T @ v + self.B.T @ self.b)
-        return np.array(np.squeeze(d)).reshape(-1, 1)
+        return np.array(np.squeeze(d), dtype=np.float64).reshape(-1, 1)
     
     def predict(self):
         pass
