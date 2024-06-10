@@ -1,1 +1,3 @@
-__all__ = [s for s in dir() if not s.startswith('_')]
+from ._fetchers import us_air_traffic
+
+__all__ = ['us_air_traffic']

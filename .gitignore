@@ -1,3 +1,4 @@
+deploy.sh
 examples/
 test-sdist/
 test-wheel/

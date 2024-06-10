@@ -33,6 +33,11 @@ dependencies:
   - ipython
   - setuptools<67.3  # avoid pkg_resources deprecation warnings from MPL/scikit-umfpack
   - matplotlib
+  - sphinx-markdown-tables
+  - sphinx_rtd_theme
+  - recommonmark
+  - numpydoc
+  - mathjax
   # For CLI
   - click
   # For linting
