@@ -1,7 +1,7 @@
-from rSpringRank.experiments import SmallGraph, RandomGraph
+from rSpringRank.stats.experiments import SmallGraph, RandomGraph
 
-from rSpringRank.cvx import cp, vanilla_cvx
-from rSpringRank import SpringRank
+from rSpringRank.optimize.cvx import cp, vanilla_cvx
+from rSpringRank.optimize.models import SpringRank
 import numpy as np
 
 

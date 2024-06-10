@@ -1,17 +1,17 @@
 from math import comb
-from rSpringRank.utils import compute_ell
-from rSpringRank.losses import (
+from rSpringRank.io.utils import compute_ell
+from rSpringRank.optimize.losses import (
     sum_squared_loss_conj,
     sum_squared_loss,
 )
-from rSpringRank.regularizers import same_mean_reg
-from rSpringRank.experiments import PhDExchange
-from rSpringRank.firstOrderMethods import (
+from rSpringRank.optimize.regularizers import same_mean_reg
+from rSpringRank.stats.experiments import PhDExchange
+from rSpringRank.optimize.firstOrderMethods import (
     gradientDescent,
 )
 import numpy as np
 
-from rSpringRank.cvx import cp, same_mean_cvx
+from rSpringRank.optimize.cvx import cp, same_mean_cvx
 
 # import gurobipy as gp
 # HOW TO SUPPRESS GUROBI OUTPUT (Set parameter Username)?

@@ -7,6 +7,7 @@ name: rSpringRank-dev
 channels:
   - defaults
   - conda-forge
+  - gurobi
 dependencies:
   - python==3.12
   - ipykernel
@@ -20,6 +21,7 @@ dependencies:
   - numpy
   - numba
   - scikit-learn
+  - gurobi
   # rSpringRank.datasets dependency
   - pooch  
   # For testing and benchmarking

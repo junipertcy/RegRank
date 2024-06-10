@@ -22,7 +22,7 @@ import numpy as np
 from numpy.linalg import norm
 from numba import njit
 import cvxpy as cp
-from .utils import (
+from ..io.utils import (
     compute_cache_from_data,
     cast2sum_squares_form,
     compute_cache_from_data_t,

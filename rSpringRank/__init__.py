@@ -18,35 +18,49 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import importlib as _importlib
+
 __version__ = "0.0.1"
 
-from .fit import *
-from .models import *
-from .losses import *
-from .regularizers import *
-from .utils import *
-from .experiments import *
+from .optimize import *
+from .datasets import *
+from .io import *
+from .stats import *
 
-__package__ = 'rSpringRank'
-__title__ = 'rSpringRank: Regularized methods for efficient ranking in networks.'
-__description__ = ''
-__copyright__ = 'Copyright (C) 2023 Tzu-Chi Yen'
+__package__ = "rSpringRank"
+__title__ = "rSpringRank: Regularized methods for efficient ranking in networks."
+__description__ = ""
+__copyright__ = "Copyright (C) 2023 Tzu-Chi Yen"
 __license__ = "LGPL version 3 or above"
-__author__ = """\n""".join([
-    'Tzu-Chi Yen <tzuchi.yen@colorado.edu>',
-])
+__author__ = """\n""".join(
+    [
+        "Tzu-Chi Yen <tzuchi.yen@colorado.edu>",
+    ]
+)
 __URL__ = ""
-__version__ = '0.8.0'
-__release__ = ''
+__version__ = "0.8.0"
+__release__ = ""
 
 
-__all__ = [
-    "rSpringRank",
-    "PhDExchange",
-    "__author__",
-    "__URL__",
+submodules = ["datasets", "io", "optimize", "stats"]
+
+__all__ = submodules + [
+    "LowLevelCallable",
+    "test",
+    "show_config",
     "__version__",
-    "__copyright__"
 ]
 
 
+def __dir__():
+    return __all__
+
+
+def __getattr__(name):
+    if name in submodules:
+        return _importlib.import_module(f"rSpringRank.{name}")
+    else:
+        try:
+            return globals()[name]
+        except KeyError:
+            raise AttributeError(f"Module 'rSpringRank' has no attribute '{name}'")
