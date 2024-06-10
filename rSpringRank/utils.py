@@ -9,7 +9,6 @@ from collections import Counter
 from scipy.linalg import sqrtm 
 import linecache
 from random import sample
-
 from logging import getLogger
 
 logger = getLogger(__name__)
@@ -181,7 +180,7 @@ def cast2sum_squares_form(data, alpha, regularization=True):
         raise TypeError(
             "Please make sure that data is of type `graph_tool.Graph` or `csr_matrix` of scipy.sparse."
         )
-    # print(f"our method: adj = {A.todense()[:5,:5]}")
+    # print(f"our method: adj = {A.toarray()[:5,:5]}")
     if A.shape[0] != A.shape[1]:
         raise ValueError("Are you sure that A is asymmetric?")
     if type(A) not in [csr_matrix, csc_matrix]:
@@ -247,9 +246,9 @@ def compute_cache_from_data_t(
         top_n=top_n,
         separate=True,
     )
-    # Becase B is sparse, B.T @ B runs fast and is also sparse
     Bt_B_inv = compute_Bt_B_inv(B)
-    Bt_B_invSqrt = sqrtm(Bt_B_inv.todense())
+    Bt_B_invSqrt = sqrtm(Bt_B_inv.toarray())
+
     return {
         "B": B,
         "b": b,
@@ -278,7 +277,8 @@ def compute_cache_from_data(data, alpha, regularization=True):
     B, b = cast2sum_squares_form(data, alpha, regularization=regularization)
     _ell = compute_ell(data)
     Bt_B_inv = compute_Bt_B_inv(B)
-    Bt_B_invSqrt = sqrtm(Bt_B_inv.todense())
+    Bt_B_invSqrt = sqrtm(Bt_B_inv.toarray())
+    
     return {
         "B": B,  # in csr_matrix format and also is sparse
         "b": b,  # in csr_matrix format and also is sparse

@@ -19,20 +19,18 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from pymongo import MongoClient
-
-username = "tzuchi"
-password = "FI4opd12cjazqPL"
-port = "127.0.0.1:27017"
-
-client = MongoClient("mongodb://%s:%s@%s" % (username, password, port))
-
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from itertools import combinations
 import graph_tool.all as gt
 import numpy as np
 from math import comb
-from rSpringRank.losses import *
+
+username = "tzuchi"
+password = "FI4opd12cjazqPL"
+port = "127.0.0.1:27017"
+
+client = MongoClient("mongodb://%s:%s@%s" % (username, password, port))
 
 
 # TODO, see

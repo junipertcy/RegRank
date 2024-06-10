@@ -1,25 +1,17 @@
-# from collections import defaultdict, Counter
-import matplotlib.pyplot as plt
-import seaborn as sns
 from math import comb
-from collections import defaultdict
-
-from numpy.random import default_rng
-
-from scipy.sparse.linalg import inv, LinearOperator, aslinearoperator, lsqr
-
-from rSpringRank.utils import *
-from rSpringRank.losses import *
-from rSpringRank.regularizers import *
-from rSpringRank.experiments import *
-from rSpringRank.firstOrderMethods import (
-    createTestProblem,
-    gradientDescent,
-    lassoSolver,
-    runAllTestProblems,
+from rSpringRank.utils import compute_ell
+from rSpringRank.losses import (
+    sum_squared_loss_conj,
+    sum_squared_loss,
 )
+from rSpringRank.regularizers import same_mean_reg
+from rSpringRank.experiments import PhDExchange
+from rSpringRank.firstOrderMethods import (
+    gradientDescent,
+)
+import numpy as np
 
-from rSpringRank.cvx import *
+from rSpringRank.cvx import cp, same_mean_cvx
 
 # import gurobipy as gp
 # HOW TO SUPPRESS GUROBI OUTPUT (Set parameter Username)?
@@ -34,6 +26,7 @@ from rSpringRank.cvx import *
 # g = pde.get_data(goi="sector")
 # g = pde.get_data(goi="stabbr")
 
+
 def compute(goi):
     pde = PhDExchange()
     g = pde.get_data(goi=goi)
@@ -43,14 +36,21 @@ def compute(goi):
     num_classes = len(set(np.array(list(g.vp["goi"]))))
     num_pairs_classes = comb(num_classes, 2)
 
-
     ### Our method; DUAL ###
     sslc = sum_squared_loss_conj()
     sslc.setup(g, alpha=1)
-    f = lambda x: sslc.evaluate(x)
-    grad = lambda x: sslc.prox(x)
-    prox = lambda x, t: same_mean_reg(lambd=1).prox(x, t)
-    prox_fcn = lambda x: same_mean_reg(lambd=1).evaluate(x)
+
+    def f(x):
+        return sslc.evaluate(x)
+
+    def grad(x):
+        return sslc.prox(x)
+
+    def prox(x, t):
+        return same_mean_reg(lambd=1).prox(x, t)
+
+    def prox_fcn(x):
+        return same_mean_reg(lambd=1).evaluate(x)
 
     x0 = np.random.rand(num_pairs_classes, 1)
 
@@ -62,7 +62,7 @@ def compute(goi):
         x0,
         prox=prox,
         prox_obj=prox_fcn,
-        stepsize=Lip_c ** -1,
+        stepsize=Lip_c**-1,
         printEvery=5000,
         maxIters=1e5,
         tol=1e-14,  # orig 1e-14
@@ -70,7 +70,7 @@ def compute(goi):
         saveHistory=True,
         linesearch=False,
         acceleration=False,
-        restart=50
+        restart=50,
     )
 
     ### CVXPY; PRIMAL ###
@@ -82,25 +82,27 @@ def compute(goi):
     n = (pde.num_dual_vars, 1)
     tau = 1
     dual_v = cp.Variable(n)
-    constraints = [ cp.norm( dual_v, np.inf ) <= tau ]
-    problem = cp.Problem(cp.Minimize(sm_cvx.objective_fn(dual_v)), constraints )
+    constraints = [cp.norm(dual_v, np.inf) <= tau]
+    problem = cp.Problem(cp.Minimize(sm_cvx.objective_fn(dual_v)), constraints)
     problem.solve(solver=cp.GUROBI, verbose=False)
-
 
     ### CODE FOR BENCHMARKING ###
     ssl = sum_squared_loss()
     ssl.setup(g, alpha=1)
 
     tau = 1
-    f_all_primal = lambda x : ssl.evaluate(x) + tau * np.linalg.norm(ssl.ell @ x, 1)
-    
+
+    def f_all_primal(x):
+        return ssl.evaluate(x) + tau * np.linalg.norm(ssl.ell @ x, 1)
+
     xNew = np.array(xNew).reshape(-1, 1)
     dual_v = np.array(dual_v.value).reshape(-1, 1)
-    
+
     our_dual = f_all_primal(sslc.dual2primal(xNew))
     cvx_dual = f_all_primal(sslc.dual2primal(dual_v))
     cvx_prim = f_all_primal(primal_s.value.reshape(1, -1).T)
     return our_dual, cvx_dual, cvx_prim
+
 
 def test_c18basic():
     our_dual, cvx_dual, cvx_prim = compute("c18basic")
@@ -113,6 +115,7 @@ def test_c18basic():
     assert np.isclose(our_dual, cvx_prim, atol=1e-3)
     assert np.isclose(cvx_dual, cvx_prim, atol=1e-3)
 
+
 def test_sector():
     our_dual, cvx_dual, cvx_prim = compute("sector")
     print("### begin:: sector ###")
@@ -124,6 +127,7 @@ def test_sector():
     assert np.isclose(our_dual, cvx_prim, atol=1e-3)
     assert np.isclose(cvx_dual, cvx_prim, atol=1e-3)
 
+
 def test_stabbr():
     our_dual, cvx_dual, cvx_prim = compute("stabbr")
     print("### begin:: stabbr ###")
@@ -134,8 +138,6 @@ def test_stabbr():
     assert np.isclose(our_dual, cvx_dual, atol=1e-1)
     assert np.isclose(our_dual, cvx_prim, atol=1e-1)
     assert np.isclose(cvx_dual, cvx_prim, atol=1e-1)
-
-
 
 
 if __name__ == "__main__":

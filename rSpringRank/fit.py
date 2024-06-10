@@ -21,13 +21,13 @@
 from scipy.sparse.linalg import lsqr
 import numpy as np
 
-
-from rSpringRank.cvx import *
-from rSpringRank.utils import *
-from rSpringRank.losses import *
-from rSpringRank.regularizers import *
-from rSpringRank.firstOrderMethods import gradientDescent
-import graph_tool.all as gt
+from .firstOrderMethods import gradientDescent
+from .losses import sum_squared_loss_conj
+from .regularizers import same_mean_reg
+from .cvx import vanilla_cvx, huber_cvx
+from .utils import cast2sum_squares_form_t, cast2sum_squares_form
+from numpy.linalg import norm
+import cvxpy as cp
 
 
 class rSpringRank(object):
@@ -72,8 +72,11 @@ class rSpringRank(object):
                 self.result["primal"] = lsqr(B, b.toarray())[:1][0].reshape(
                     -1,
                 )
+
                 # compute primal functional value
-                f_all_primal = lambda x: 0.5 * norm(B @ x - b) ** 2
+                def f_all_primal(x):
+                    return 0.5 * norm(B @ x - b) ** 2
+
                 self.result["f_primal"] = f_all_primal(
                     self.result["primal"].reshape(-1, 1)
                 )
@@ -109,7 +112,7 @@ class rSpringRank(object):
                     "Lip_c", self.sslc.find_Lipschitz_constant()
                 )
                 self.fo_setup["maxIters"] = kwargs.get("maxIters", 1e6)
-                self.fo_setup["tol"] = kwargs.get("tol", 1e-14)
+                self.fo_setup["tol"] = kwargs.get("tol", 1e-12)
                 dual, _ = gradientDescent(
                     self.fo_setup["f"],
                     self.fo_setup["grad"],
@@ -132,9 +135,11 @@ class rSpringRank(object):
                 self.result["fo_output"] = _
 
                 # compute primal functional value
-                f_all_primal = lambda x: 0.5 * norm(
-                    self.sslc.B @ x - self.sslc.b
-                ) ** 2 + self.lambd * np.linalg.norm(self.sslc.ell @ x, 1)
+                def f_all_primal(x):
+                    return 0.5 * norm(
+                        self.sslc.B @ x - self.sslc.b
+                    ) ** 2 + self.lambd * np.linalg.norm(self.sslc.ell @ x, 1)
+
                 self.result["f_primal"] = f_all_primal(
                     self.result["primal"].reshape(-1, 1)
                 )

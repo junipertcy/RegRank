@@ -1,0 +1,37 @@
+# Please refer to https://scipy.github.io/devdocs/building/index.html
+# To use:
+#   $ conda env create -f environment.yml  # `mamba` works too for this command
+#   $ conda activate rSpringRank-dev
+#
+name: rSpringRank-dev
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python==3.12
+  - ipykernel
+  - graph-tool
+  - cvxpy
+  - pytest
+  - seaborn
+  - bson
+  - pymongo
+  - scipy
+  - numpy
+  - numba
+  - scikit-learn
+  # rSpringRank.datasets dependency
+  - pooch  
+  # For testing and benchmarking
+  - pytest
+  # For building docs
+  - sphinx
+  - intersphinx-registry
+  - numpydoc
+  - ipython
+  - setuptools<67.3  # avoid pkg_resources deprecation warnings from MPL/scikit-umfpack
+  - matplotlib
+  # For CLI
+  - click
+  # For linting
+  - ruff>=0.0.292

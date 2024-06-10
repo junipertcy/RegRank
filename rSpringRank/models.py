@@ -17,24 +17,23 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-import rSpringRank.losses as losses
-import rSpringRank.regularizers as regularizers
+
 import graph_tool.all as gt
 
 import numpy as np
-from numba import jit
 from scipy.sparse import spdiags, csr_matrix
 from scipy.optimize import brentq
 import scipy.sparse.linalg
 
 import warnings
 from scipy.sparse import SparseEfficiencyWarning
+from .regularizers import zero_reg 
 
 warnings.simplefilter("ignore", SparseEfficiencyWarning)
 
 
 class BaseModel:
-    def __init__(self, loss, reg=regularizers.zero_reg()):
+    def __init__(self, loss, reg=zero_reg()):
         self.loss = loss
         self.local_reg = reg
 
@@ -64,7 +63,7 @@ class SpringRank:
             adj = gt.adjacency(data)
         else:
             raise NotImplementedError
-        # print(f"bicgstab: adj = {adj.todense()[:5,:5]}")
+        # print(f"bicgstab: adj = {adj.toarray()[:5,:5]}")
         ranks = self.get_ranks(adj)
 
         info = {"rank": ranks}
@@ -151,7 +150,7 @@ class SpringRank:
             if type(A) == np.ndarray:
                 A = scipy.sparse.csr_matrix(A)
             # print("Running bicgstab to solve Ax=b ...")
-            # print("adj matrix A:\n", A.todense())
+            # print("adj matrix A:\n", A.toarray())
             N = A.shape[0]
             k_in = scipy.sparse.csr_matrix.sum(A, 0)
             k_out = scipy.sparse.csr_matrix.sum(A, 1).T

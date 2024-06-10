@@ -20,8 +20,9 @@
 
 import numpy as np
 from numpy.linalg import norm
+from numba import njit
 import cvxpy as cp
-from rSpringRank.utils import (
+from .utils import (
     compute_cache_from_data,
     cast2sum_squares_form,
     compute_cache_from_data_t,
@@ -144,26 +145,24 @@ class sum_squared_loss_conj(Loss):
     def find_Lipschitz_constant(self):
         # TODO: do power method
         # f = lambda x: self.Bt_B_invSqrt @ (self.ell.T @ x)
-        
+
         L = norm(self.Bt_B_invSqrt_ellt, ord=2) ** 2
         return L
 
+    @staticmethod
+    @njit(cache=True)
+    def _evaluate(A, x, b):
+        return 0.5 * np.linalg.norm(A @ x - b) ** 2
+
     def evaluate(self, theta):
-        def f(x):
-            return -self.Bt_B_invSqrt @ (self.ell.T @ x)
-        term_1 = (
-            0.5
-            * norm(f(theta) + self.Bt_B_invSqrt_Btb) ** 2
-        )
+        term_1 = self._evaluate(self.Bt_B_invSqrt_ellt, theta, self.Bt_B_invSqrt_Btb)
         return term_1 + self.term_2
 
     def evaluate_cvx(self, theta):
         term_1 = (
-            0.5
-            * cp.norm(self.Bt_B_invSqrt @ (-self.ell.T @ theta + self.B.T @ self.b))
-            ** 2
+            0.5 * cp.norm(-self.Bt_B_invSqrt_ellt @ theta + self.Bt_B_invSqrt_Btb) ** 2
         )
-        term_2 = -0.5 * cp.norm(self.b.todense()) ** 2
+        term_2 = -0.5 * cp.norm(self.b.toarray()) ** 2
         return term_1 + term_2
 
     def setup(self, data, alpha, **kwargs):
@@ -187,31 +186,32 @@ class sum_squared_loss_conj(Loss):
             raise NotImplementedError("We do not use first-order solver for this case.")
         else:
             raise NotImplementedError("Method not implemented.")
-    
+
         self.B = cache["B"]  # sparse
         self.b = cache["b"]  # sparse
         self.ell = cache["ell"]  # sparse
-        self.Bt_B_inv = cache["Bt_B_inv"]  # dense
-        self.Bt_B_invSqrt = cache["Bt_B_invSqrt"]  # dense
+        self.Bt_B_inv = cache["Bt_B_inv"]  # 'numpy.ndarray'
+        self.Bt_B_invSqrt = cache["Bt_B_invSqrt"]  # 'numpy.ndarray'
 
-        # derived ones
-        self.Bt_B_invSqrt_Btb = self.Bt_B_invSqrt @ self.B.T @ self.b
+        # process sparse@sparse first, then dense@sparse would be faster
+        # And, explicit parentheses would be faster
+        self.Bt_B_invSqrt_Btb = self.Bt_B_invSqrt @ (self.B.T @ self.b)
         self.Bt_B_invSqrt_ellt = self.Bt_B_invSqrt @ self.ell.T
-        self.ell_BtB_inv_Bt_b = self.ell @ self.Bt_B_inv @ self.B.T @ self.b  # sparse
-        self.ell_BtB_inb_ellt = self.ell @ self.Bt_B_inv @ -self.ell.T  # sparse
-        self.ell_BtB_inv_Bt_b = np.array(self.ell_BtB_inv_Bt_b.todense(), dtype=np.float64)
-        self.ell_BtB_inb_ellt = np.array(self.ell_BtB_inb_ellt.todense(), dtype=np.float64)
 
+        self.ell_BtB_inv_Bt_b = (
+            self.ell @ (self.Bt_B_inv @ (self.B.T @ self.b))
+        ).toarray()
+        self.ell_BtB_inb_ellt = (self.ell @ (self.Bt_B_inv @ -self.ell.T)).toarray()
 
-        self.term_2 = -0.5 * norm(self.b.todense()) ** 2
-    
+        self.term_2 = -0.5 * norm(self.b.toarray()) ** 2
+
     def prox(self, theta):
-        return - self.ell_BtB_inb_ellt @ theta - self.ell_BtB_inv_Bt_b
+        return -self.ell_BtB_inb_ellt @ theta - self.ell_BtB_inv_Bt_b
 
     def dual2primal(self, v):
         d = self.Bt_B_inv @ (-self.ell.T @ v + self.B.T @ self.b)
         return np.array(np.squeeze(d), dtype=np.float64).reshape(-1, 1)
-    
+
     def predict(self):
         pass
 

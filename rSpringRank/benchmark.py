@@ -18,29 +18,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-# from collections import defaultdict, Counter
-import matplotlib.pyplot as plt
-import seaborn as sns
 from math import comb
-from collections import defaultdict
+import numpy as np
+from .losses import sum_squared_loss, sum_squared_loss_conj
+from cvx import cp
 
-
-from numpy.random import default_rng
-
-from scipy.sparse.linalg import inv, LinearOperator, aslinearoperator, lsqr
-
-from utils import *
-from losses import *
-from regularizers import *
-from experiments import *
-from firstOrderMethods import (
-    createTestProblem,
+from .utils import (
+    PhDExchange,
+    compute_ell,
+    same_mean_cvx,
+    same_mean_reg,
     gradientDescent,
-    lassoSolver,
-    runAllTestProblems,
 )
-
-from cvx import *
 
 # import gurobipy as gp
 # HOW TO SUPPRESS GUROBI OUTPUT (Set parameter Username)?
@@ -69,10 +58,23 @@ num_pairs_classes = comb(num_classes, 2)
 
 sslc = sum_squared_loss_conj()
 sslc.setup(g, alpha=1)
-f = lambda x: sslc.evaluate(x)
-grad = lambda x: sslc.prox(x)
-prox = lambda x, t: same_mean_reg(tau=1).prox(x, t)
-prox_fcn = lambda x: same_mean_reg(tau=1).evaluate(x)
+
+
+def f(x):
+    return sslc.evaluate(x)
+
+
+def grad(x):
+    return sslc.prox(x)
+
+
+def prox(x, t):
+    return same_mean_reg(tau=1).prox(x, t)
+
+
+def prox_fcn(x):
+    return same_mean_reg(tau=1).evaluate(x)
+
 
 x0 = np.random.rand(num_pairs_classes, 1)
 
@@ -118,7 +120,11 @@ ssl = sum_squared_loss()
 ssl.setup(g, alpha=1)
 
 tau = 1
-f_all_primal = lambda x: ssl.evaluate(x) + tau * np.linalg.norm(ssl.ell @ x, 1)
+
+
+def f_all_primal(x):
+    return ssl.evaluate(x) + tau * np.linalg.norm(ssl.ell @ x, 1)
+
 
 our_dual = f_all_primal(pde.dual2primal(xNew))
 cvx_dual = f_all_primal(pde.dual2primal(dual_v))

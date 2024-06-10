@@ -24,17 +24,9 @@
 # https://github.com/cdebacco/SpringRank/blob/master/matlab/crossValidation.m
 
 import numpy as np
-from scipy.sparse import issparse, find, triu
+from scipy.sparse import find, triu
 from scipy.optimize import minimize_scalar, minimize
-from scipy.optimize import fsolve
 from scipy.interpolate import interp1d
-
-from rSpringRank.utils import *
-from rSpringRank.losses import *
-from rSpringRank.regularizers import *
-from rSpringRank.experiments import *
-import rSpringRank
-from rSpringRank.fit import rSpringRank
 import graph_tool.all as gt
 
 from numba import njit
@@ -220,7 +212,7 @@ class CrossValidation(object):
 
                 # SpringRank accuracies on VALIDATION set
                 validate_A = gt.adjacency(validate_G)
-                validate_A = np.array(validate_A.todense(), dtype=np.float64)
+                validate_A = validate_A.toarray()
                 sig_a[foldrep] = self.localAccuracy(validate_A, ranking, bloc0)
                 sig_L[foldrep] = (
                     -self.globalAccuracy(validate_A, ranking, bglob0) / numTestEdges
@@ -259,14 +251,14 @@ class CrossValidation(object):
 
     @staticmethod
     def betaLocal(A, s):
-        M = np.array(A.todense(), dtype=np.float64)
+        M = A.toarray()
         r = np.array(s, dtype=np.float64)
         b = minimize_scalar(lambda _: negacc(M, r, _), bounds=(1e-6, 1000)).x
         return b
 
     @staticmethod
     def betaGlobal(A, s):
-        M = np.array(A.todense(), dtype=np.float64)
+        M = A.toarray()
         r = np.array(s, dtype=np.float64)
         b = minimize_scalar(lambda _: f(M, r, _) ** 2, bounds=(1e-6, 1000)).x
         return b

@@ -19,12 +19,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import cvxpy as cp
-import matplotlib.pyplot as plt
-import numpy as np
-
-
-import clarabel
-from rSpringRank.losses import *
+from .losses import sum_squared_loss_conj, sum_squared_loss, huber_loss
 
 
 class same_mean_cvx(object):
