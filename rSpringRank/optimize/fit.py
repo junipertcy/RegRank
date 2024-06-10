@@ -25,7 +25,7 @@ from .firstOrderMethods import gradientDescent
 from .losses import sum_squared_loss_conj
 from .regularizers import same_mean_reg
 from .cvx import vanilla_cvx, huber_cvx
-from .utils import cast2sum_squares_form_t, cast2sum_squares_form
+from ..io import cast2sum_squares_form_t, cast2sum_squares_form
 from numpy.linalg import norm
 import cvxpy as cp
 

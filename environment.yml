@@ -13,7 +13,6 @@ dependencies:
   - ipykernel
   - graph-tool
   - cvxpy
-  - pytest
   - seaborn
   - bson
   - pymongo
@@ -42,3 +41,6 @@ dependencies:
   - click
   # For linting
   - ruff>=0.0.292
+  - restructuredtext_lint
+  - doc8
+  - rstcheck
