@@ -1,7 +1,10 @@
 # rSpringRank
 
-[![license](https://img.shields.io/badge/license-LGPL-green.svg?style=flat)](https://github.com/junipertcy/rSpringRank/blob/main/LICENSE)
+.. image:: https://img.shields.io/badge/license-LGPL-green.svg?style=flat
+    :target: https://github.com/junipertcy/rSpringRank/blob/main/LICENSE
 
+.. image:: https://img.shields.io/pypi/dm/rSpringRank.svg?label=Pypi%20downloads
+  :target: https://pypi.org/project/rSpringRank/
 
 **rSpringRank** implements a collection of regularized, convex models (+solvers) that allow the inference of hierarchical structure in a directed network, which exists due to dominance, social status, or prestige. Specifically, this work leverages the time-varying structure and/or the node metadata present in the data set.
 
