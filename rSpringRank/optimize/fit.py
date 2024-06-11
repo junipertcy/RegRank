@@ -100,11 +100,11 @@ class rSpringRank(object):
 
                 # first order kwargs
                 self.fo_setup["printEvery"] = kwargs.get("printEvery", 5000)
-                self.fo_setup["ArmijoLinesearch"] = kwargs.get("ArmijoLinesearch", True)
+                self.fo_setup["ArmijoLinesearch"] = kwargs.get("ArmijoLinesearch", False)
                 self.fo_setup["linesearch"] = kwargs.get(
-                    "linesearch", False
+                    "linesearch", True
                 )  # do not use True, still buggy
-                self.fo_setup["acceleration"] = kwargs.get("acceleration", False)
+                self.fo_setup["acceleration"] = kwargs.get("acceleration", True)
                 self.fo_setup["x0"] = kwargs.get(
                     "x0", np.random.rand(self.sslc.ell.shape[0], 1).astype(np.float32)
                 ).reshape(-1, 1)
@@ -178,11 +178,11 @@ class rSpringRank(object):
                 self.fo_setup["prox_fcn"] = lambda x: same_mean_reg(lambd=1).evaluate(x)
                 # first order kwargs
                 self.fo_setup["printEvery"] = kwargs.get("printEvery", 5000)
-                self.fo_setup["ArmijoLinesearch"] = kwargs.get("ArmijoLinesearch", True)
+                self.fo_setup["ArmijoLinesearch"] = kwargs.get("ArmijoLinesearch", False)
                 self.fo_setup["linesearch"] = kwargs.get(
-                    "linesearch", False
+                    "linesearch", True
                 )  # do not use True, still buggy
-                self.fo_setup["acceleration"] = kwargs.get("acceleration", False)
+                self.fo_setup["acceleration"] = kwargs.get("acceleration", True)
                 self.fo_setup["x0"] = kwargs.get(
                     "x0", np.random.rand(self.sslc.ell.shape[0], 1).astype(np.float32)
                 ).reshape(-1, 1)
