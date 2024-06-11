@@ -1,13 +1,16 @@
-from .utils import (
+from .graph2mat import (
     cast2sum_squares_form_t,
     cast2sum_squares_form,
+    filter_by_year,
+    compute_ell,
     compute_cache_from_data_t,
     compute_cache_from_data,
     compute_Bt_B_inv,
     grad_g_star,
-    compute_ell,
+)
+
+from .utils import (
     compute_spearman_correlation,
-    render_ijwt,
     filter_by_time,
     add_erroneous_edges,
     D_operator,
@@ -18,8 +21,8 @@ from .utils import (
     D_operator_b_sparse,
     D_operator_b,
     implicit2explicit,
-    filter_by_year,
 )
+
 
 __all__ = [
     "cast2sum_squares_form_t",
@@ -30,7 +33,6 @@ __all__ = [
     "grad_g_star",
     "compute_ell",
     "compute_spearman_correlation",
-    "render_ijwt",
     "filter_by_time",
     "add_erroneous_edges",
     "D_operator",
@@ -41,5 +43,5 @@ __all__ = [
     "D_operator_b_sparse",
     "D_operator_b",
     "implicit2explicit",
-    "filter_by_year"
+    "filter_by_year",
 ]

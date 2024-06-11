@@ -61,7 +61,7 @@ def f(M, r, b):
         for j in range(n):
             d = r[i] - r[j]
             pij = (1 + np.exp(-2 * b * d)) ** (-1)
-            y += np.float64(d * (M[i, j] - (M[i, j] + M[j, i]) * pij))
+            y += np.float32(d * (M[i, j] - (M[i, j] + M[j, i]) * pij))
     return y
 
 
@@ -252,13 +252,13 @@ class CrossValidation(object):
     @staticmethod
     def betaLocal(A, s):
         M = A.toarray()
-        r = np.array(s, dtype=np.float64)
+        r = np.array(s, dtype=np.float32)
         b = minimize_scalar(lambda _: negacc(M, r, _), bounds=(1e-6, 1000)).x
         return b
 
     @staticmethod
     def betaGlobal(A, s):
         M = A.toarray()
-        r = np.array(s, dtype=np.float64)
+        r = np.array(s, dtype=np.float32)
         b = minimize_scalar(lambda _: f(M, r, _) ** 2, bounds=(1e-6, 1000)).x
         return b

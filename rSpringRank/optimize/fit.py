@@ -106,13 +106,16 @@ class rSpringRank(object):
                 )  # do not use True, still buggy
                 self.fo_setup["acceleration"] = kwargs.get("acceleration", False)
                 self.fo_setup["x0"] = kwargs.get(
-                    "x0", np.random.rand(self.sslc.ell.shape[0], 1)
+                    "x0", np.random.rand(self.sslc.ell.shape[0], 1).astype(np.float32)
                 ).reshape(-1, 1)
+                # TODO: Using view() can change dtype in place. Not sure if it's better.
+                self.fo_setup["x0"] = self.fo_setup["x0"].astype(np.float32) 
                 self.fo_setup["Lip_c"] = kwargs.get(
                     "Lip_c", self.sslc.find_Lipschitz_constant()
                 )
                 self.fo_setup["maxIters"] = kwargs.get("maxIters", 1e6)
                 self.fo_setup["tol"] = kwargs.get("tol", 1e-12)
+                
                 dual, _ = gradientDescent(
                     self.fo_setup["f"],
                     self.fo_setup["grad"],
@@ -181,8 +184,10 @@ class rSpringRank(object):
                 )  # do not use True, still buggy
                 self.fo_setup["acceleration"] = kwargs.get("acceleration", False)
                 self.fo_setup["x0"] = kwargs.get(
-                    "x0", np.random.rand(self.sslc.ell.shape[0], 1)
+                    "x0", np.random.rand(self.sslc.ell.shape[0], 1).astype(np.float32)
                 ).reshape(-1, 1)
+                # TODO: Using view() can change dtype in place. Not sure if it's better.
+                self.fo_setup["x0"] = self.fo_setup["x0"].astype(np.float32)
                 self.fo_setup["Lip_c"] = kwargs.get(
                     "Lip_c", self.sslc.find_Lipschitz_constant()
                 )

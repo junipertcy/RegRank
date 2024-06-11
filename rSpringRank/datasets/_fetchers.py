@@ -5,6 +5,7 @@ import graph_tool.all as gt
 import zstandard as zstd
 from pathlib import Path
 import tempfile
+import linecache
 
 try:
     import pooch
@@ -53,3 +54,66 @@ def us_air_traffic():
             dctx.copy_stream(ifh, ofh)
         graph = gt.load_graph(gt_fname.as_posix())
         return graph
+
+
+def PhD_exchange():
+    fname = fetch_data("PhD_exchange.txt")
+    fname_school_names = fetch_data("school_names.txt")
+    delimiter = " "
+
+    g = gt.Graph()
+    vname = g.new_vp("string")
+    vindex = g.new_vp("int")
+    eweight = g.new_ep("double")
+    etime = g.new_ep("int")
+
+    name2id = dict()
+    time2id = dict()
+    nameid = 0
+    timeid = 0
+
+    with open(fname, "r") as f:
+        for line in f:
+            ijwt = line.replace("\n", "").split(delimiter)[:4]
+
+            try:
+                name2id[ijwt[0]]
+            except KeyError:
+                name2id[ijwt[0]] = nameid
+                nameid += 1
+
+            try:
+                name2id[ijwt[1]]
+            except KeyError:
+                name2id[ijwt[1]] = nameid
+                nameid += 1
+
+            try:
+                time2id[ijwt[3]]
+            except KeyError:
+                time2id[ijwt[3]] = timeid
+                timeid += 1
+
+            g.add_edge_list(
+                [
+                    (name2id[ijwt[1]], name2id[ijwt[0]], ijwt[2], time2id[ijwt[3]])
+                ],  # note the source / target order
+                eprops=[eweight, etime],
+            )
+    g.edge_properties["eweight"] = eweight
+    g.edge_properties["etime"] = etime
+    id2name = {v: k for k, v in name2id.items()}
+
+    def school_name(n):
+        return linecache.getline(fname_school_names, n).replace("\n", "")[:-1]
+    # print(school_name(165))  # >> University of Michigan
+    for vertex in g.vertices():
+        vname[vertex] = school_name(int(id2name[vertex]))
+        # print(vname[vertex], vertex, id2name[vertex])
+        vindex[vertex] = vertex.__int__()
+
+    g.vertex_properties["vname"] = vname
+    g.vertex_properties["vindex"] = vindex
+    # print(name2id)
+
+    return g

@@ -22,7 +22,7 @@ import numpy as np
 from numpy.linalg import norm
 from numba import njit
 import cvxpy as cp
-from ..io.utils import (
+from ..io import (
     compute_cache_from_data,
     cast2sum_squares_form,
     compute_cache_from_data_t,
@@ -154,7 +154,7 @@ class sum_squared_loss_conj(Loss):
     def _evaluate(A, x, b):
         return 0.5 * np.linalg.norm(A @ x - b) ** 2
 
-    def evaluate(self, theta):
+    def evaluate(self, theta):  # relatively expensive
         term_1 = self._evaluate(self.Bt_B_invSqrt_ellt, theta, self.Bt_B_invSqrt_Btb)
         return term_1 + self.term_2
 
@@ -197,20 +197,25 @@ class sum_squared_loss_conj(Loss):
         # And, explicit parentheses would be faster
         self.Bt_B_invSqrt_Btb = self.Bt_B_invSqrt @ (self.B.T @ self.b)
         self.Bt_B_invSqrt_ellt = self.Bt_B_invSqrt @ self.ell.T
-
+        self.Bt_B_invSqrt_ellt = np.ascontiguousarray(self.Bt_B_invSqrt_ellt)
         self.ell_BtB_inv_Bt_b = (
             self.ell @ (self.Bt_B_inv @ (self.B.T @ self.b))
         ).toarray()
         self.ell_BtB_inb_ellt = (self.ell @ (self.Bt_B_inv @ -self.ell.T)).toarray()
+        self.term_2 = (-0.5 * norm(self.b.toarray()) ** 2).astype(np.float32)
 
-        self.term_2 = -0.5 * norm(self.b.toarray()) ** 2
+    @staticmethod
+    @njit(cache=True)
+    def _prox(A, x, b):
+        return A @ x + b
 
-    def prox(self, theta):
-        return -self.ell_BtB_inb_ellt @ theta - self.ell_BtB_inv_Bt_b
+    def prox(self, theta):  # relatively expensive
+        return self._prox(-self.ell_BtB_inb_ellt, theta, -self.ell_BtB_inv_Bt_b)
+        # return -self.ell_BtB_inb_ellt @ theta - self.ell_BtB_inv_Bt_b
 
     def dual2primal(self, v):
         d = self.Bt_B_inv @ (-self.ell.T @ v + self.B.T @ self.b)
-        return np.array(np.squeeze(d), dtype=np.float64).reshape(-1, 1)
+        return np.array(np.squeeze(d), dtype=np.float32).reshape(-1, 1)
 
     def predict(self):
         pass

@@ -25,7 +25,7 @@ Installation
 Data sets
 ---------
 
-We have a companion repo——`rSpringRank-data <https://github.com/junipertcy/rSpringRank-data>`_——for data sets used in the paper. Which are:
+We have a companion repo—`rSpringRank-data <https://github.com/junipertcy/rSpringRank-data>`_—for data sets used in the paper. Which are:
 
 * `PhD_exchange <https://github.com/junipertcy/rSpringRank-data/tree/main/PhD_exchange>`_
 * `Parakeet <https://github.com/junipertcy/rSpringRank-data/tree/main/parakeet>`_
