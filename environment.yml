@@ -21,6 +21,7 @@ dependencies:
   - numba
   - scikit-learn
   - gurobi
+  - loky
   # rSpringRank.datasets dependency
   - pooch  
   # For testing and benchmarking

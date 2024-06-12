@@ -1,4 +1,4 @@
-from scipy.sparse import csr_matrix, csc_matrix
+from scipy.sparse import csr_matrix, csc_matrix, find
 import graph_tool.all as gt
 import numpy as np
 from scipy.linalg import sqrtm
@@ -53,8 +53,8 @@ def cast2sum_squares_form_t(
             raise TypeError(
                 "Please make sure that A is of type `csr_matrix` or `csc_matrix` of scipy.sparse."
             )
-        for ind in zip(*A.nonzero()):
-            i, j = ind[0], ind[1]
+        for ind in zip(*find(A)):
+            i, j, val = ind[0], ind[1], ind[2]
             if i == j:
                 continue
             if j < i:
@@ -67,15 +67,15 @@ def cast2sum_squares_form_t(
 
             row.append(_row_t)
             col.append(i_t)
-            data.append(-A[ind] ** 0.5)  # TODO: check sign
+            data.append(-(val**0.5))  # TODO: check sign
             row.append(_row_t)
             col.append(j_t)
-            data.append(A[ind] ** 0.5)
+            data.append(val**0.5)
 
             # constant term
             row_b.append(_row_t)
             col_b.append(0)
-            data_b.append(-A[ind] ** 0.5)
+            data_b.append(-(val**0.5))
 
         row += [_ for _ in range((t + 1) * (shape**2) - shape, (t + 1) * (shape**2))]
         col += [_ for _ in range(t * shape, (t + 1) * shape)]
@@ -119,34 +119,34 @@ def cast2sum_squares_form_t(
         B = csr_matrix(
             (data, (row, col)),
             shape=(T * shape**2, T * shape),
-            dtype=np.float32,
+            dtype=np.float64,
         )
         b = csr_matrix(
             (data_b, (row_b, col_b)),
             shape=(T * shape**2, 1),
-            dtype=np.float32,
+            dtype=np.float64,
         )
         B_T = csr_matrix(
             (data_T, (row_T, col_T)),
             shape=((T - 1) * shape, T * shape),
-            dtype=np.float32,
+            dtype=np.float64,
         )
         return B, b, B_T
     else:
         B = csr_matrix(
             (data, (row, col)),
             shape=(T * shape**2 + (T - 1) * shape, T * shape),
-            dtype=np.float32,
+            dtype=np.float64,
         )
         b = csr_matrix(
             (data_b, (row_b, col_b)),
             shape=(T * shape**2 + (T - 1) * shape, 1),
-            dtype=np.float32,
+            dtype=np.float64,
         )
         return B, b, None
 
 
-def cast2sum_squares_form(data, alpha, regularization=True):
+def cast2sum_squares_form(data, alpha, regularization=True):  # TODO: this is slow
     """
     This is how we linearize the objective function:
     B_ind  i  j
@@ -168,10 +168,7 @@ def cast2sum_squares_form(data, alpha, regularization=True):
         A = gt.adjacency(data)
     elif type(data) is csr_matrix:
         A = data
-    else:
-        raise TypeError(
-            "Please make sure that data is of type `graph_tool.Graph` or `csr_matrix` of scipy.sparse."
-        )
+    
     # print(f"our method: adj = {A.toarray()[:5,:5]}")
     if A.shape[0] != A.shape[1]:
         raise ValueError("Are you sure that A is asymmetric?")
@@ -180,10 +177,19 @@ def cast2sum_squares_form(data, alpha, regularization=True):
             "Please make sure that A is of type `csr_matrix` or `csc_matrix` of scipy.sparse."
         )
     shape = A.shape[0]
-    row, col, data = [], [], []
-    row_b, col_b, data_b = [], [], []
-    for ind in zip(*A.nonzero()):
-        i, j = ind[0], ind[1]
+    A_nonzero = A.nonzero()
+    num_nonzero = A_nonzero[0].shape[0]
+    if regularization:
+        row, col, data = [
+            np.zeros(num_nonzero * 2 + shape, dtype=np.float64) for _ in range(3)
+        ]
+    else:
+        row, col, data = [np.zeros(num_nonzero * 2, dtype=np.float64) for _ in range(3)]
+    row_b, col_b, data_b = [np.zeros(num_nonzero, dtype=np.float64) for _ in range(3)]
+    counter_B = counter_b = 0
+    # data_iter = iter(A.data)
+    for ind in zip(*find(A)):
+        i, j, val = ind[0], ind[1], ind[2]
         if i == j:
             # logger.warning(
             #     "WARNING: self-loop detected in the adjacency matrix. Ignoring..."
@@ -193,35 +199,38 @@ def cast2sum_squares_form(data, alpha, regularization=True):
             _row = i * (shape - 1) + j
         else:
             _row = i * (shape - 1) + j - 1
-        row.append(_row)
-        col.append(i)
-        data.append(-A[ind] ** 0.5)  # TODO: check sign
-        row.append(_row)
-        col.append(j)
-        data.append(A[ind] ** 0.5)
 
-        row_b.append(_row)
-        col_b.append(0)
-        data_b.append(-A[ind] ** 0.5)
+        row[counter_B] = _row
+        col[counter_B] = i
+        # val = next(data_iter)
+        data[counter_B] = -(val**0.5)  # TODO: check sign
+
+        counter_B += 1
+        row[counter_B] = _row
+        col[counter_B] = j
+        data[counter_B] = val**0.5
+        counter_B += 1
+
+        row_b[counter_b] = _row
+        col_b[counter_b] = 0
+        data_b[counter_b] = -(val**0.5)
+        counter_b += 1
 
     if regularization:
-        row += [_ for _ in range(shape**2 - shape, shape**2)]
-        col += [_ for _ in range(shape)]
-        data += [alpha**0.5] * shape
-
-        # Note that you do not need to specify zeros, since the default value is zero.
-        # row_b += [_ for _ in range(shape**2 - shape, shape**2)]
-        # col_b += [0] * shape
-        # data_b += [0] * shape
-        B = csr_matrix((data, (row, col)), shape=(shape**2, shape), dtype=np.float32)
-        b = csr_matrix((data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float32)
+        __ = shape**2 - shape
+        for _ in range(shape**2 - shape, shape**2):
+            row[counter_B] = _
+            col[counter_B] = _ - __
+            data[counter_B] = alpha**0.5
+            counter_B += 1
+        B = csr_matrix((data, (row, col)), shape=(shape**2, shape), dtype=np.float64)
+        b = csr_matrix((data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float64)
     else:
-        # logger.warning("WARNING: no regularization is used. Are you sure?")
         B = csr_matrix(
-            (data, (row, col)), shape=(shape**2 - shape, shape), dtype=np.float32
+            (data, (row, col)), shape=(shape**2 - shape, shape), dtype=np.float64
         )
         b = csr_matrix(
-            (data_b, (row_b, col_b)), shape=(shape**2 - shape, 1), dtype=np.float32
+            (data_b, (row_b, col_b)), shape=(shape**2 - shape, 1), dtype=np.float64
         )
     return B, b
 
@@ -325,7 +334,7 @@ def compute_ell(g, sparse=True):
     if sparse:
         row, col, data = [], [], []
     else:
-        ell = np.zeros([comb(len_classes, 2), len(g.get_vertices())], dtype=np.float32)
+        ell = np.zeros([comb(len_classes, 2), len(g.get_vertices())], dtype=np.float64)
     for idx, (i, j) in enumerate(comb_classes):
         for _, vtx in enumerate(g.vertices()):
             # sometimes we feed g as a gt.GraphView
@@ -346,6 +355,8 @@ def compute_ell(g, sparse=True):
                     ell[idx][_] = ctr_classes[j] ** -1
     if sparse:
         ell = csr_matrix(
-            (data, (row, col)), shape=(comb(len_classes, 2), len(g.get_vertices())), dtype=np.float32
+            (data, (row, col)),
+            shape=(comb(len_classes, 2), len(g.get_vertices())),
+            dtype=np.float64,
         )
     return ell

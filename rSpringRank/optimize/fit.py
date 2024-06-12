@@ -106,12 +106,15 @@ class rSpringRank(object):
                 )  # do not use True, still buggy
                 self.fo_setup["acceleration"] = kwargs.get("acceleration", True)
                 self.fo_setup["x0"] = kwargs.get(
-                    "x0", np.random.rand(self.sslc.ell.shape[0], 1).astype(np.float32)
+                    "x0", np.random.rand(self.sslc.ell.shape[0], 1).astype(np.float64)
                 ).reshape(-1, 1)
                 # TODO: Using view() can change dtype in place. Not sure if it's better.
-                self.fo_setup["x0"] = self.fo_setup["x0"].astype(np.float32) 
+                self.fo_setup["x0"] = self.fo_setup["x0"].astype(np.float64)
+                
+                # You may replace 1. with self.sslc.find_Lipschitz_constant()
+                # But when linesearch is True and acceleration is True, using 1 is faster.
                 self.fo_setup["Lip_c"] = kwargs.get(
-                    "Lip_c", self.sslc.find_Lipschitz_constant()
+                    "Lip_c", 1.
                 )
                 self.fo_setup["maxIters"] = kwargs.get("maxIters", 1e6)
                 self.fo_setup["tol"] = kwargs.get("tol", 1e-12)
@@ -184,12 +187,14 @@ class rSpringRank(object):
                 )  # do not use True, still buggy
                 self.fo_setup["acceleration"] = kwargs.get("acceleration", True)
                 self.fo_setup["x0"] = kwargs.get(
-                    "x0", np.random.rand(self.sslc.ell.shape[0], 1).astype(np.float32)
+                    "x0", np.random.rand(self.sslc.ell.shape[0], 1).astype(np.float64)
                 ).reshape(-1, 1)
                 # TODO: Using view() can change dtype in place. Not sure if it's better.
-                self.fo_setup["x0"] = self.fo_setup["x0"].astype(np.float32)
+                self.fo_setup["x0"] = self.fo_setup["x0"].astype(np.float64)
+                # You may replace 1. with self.sslc.find_Lipschitz_constant()
+                # But when linesearch is True and acceleration is True, using 1 is faster.
                 self.fo_setup["Lip_c"] = kwargs.get(
-                    "Lip_c", self.sslc.find_Lipschitz_constant()
+                    "Lip_c", 1.
                 )
                 self.fo_setup["maxIters"] = kwargs.get("maxIters", 1e5)
                 dual_time, _ = gradientDescent(

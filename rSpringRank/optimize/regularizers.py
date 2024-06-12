@@ -64,32 +64,29 @@ class zero_reg(Regularizer):
 class same_mean_reg(Regularizer):
     # this is the conjugate function.
     def __init__(self, lambd=1):
+        if np.size(lambd) > 1 or lambd <= 0:
+            raise ValueError("'lambd' must be a positive scalar")
         self.lambd = lambd
 
     def evaluate(self, theta):
-        # return 0 if norm(theta / self.lambd, ord=1) <= 1 else np.infty
-        # may not be called very often
-        # print( theta.shape )
-        return 0 if norm(theta, ord=np.inf) <= self.lambd else np.infty
+        """Indicate if the input 'theta' is in the constraint set or not
+
+        Args:
+            theta (float): input value (in the dual space)
+
+        Returns:
+            float: 0 if in the constraint set, +inf otherwise
+        """
+        tol = 1e-8
+        return 0.0 if norm(theta, ord=np.inf) <= self.lambd + tol else np.infty
 
     def evaluate_cvx(self, theta):
-        return 0 if cp.norm(theta / self.lambd, 1) <= 1 else np.infty
+        return (
+            0.0 if cp.norm(theta / self.lambd, 1) <= 1 else np.infty
+        )  # double check the ord
 
     def prox(self, theta, t):  # see LinfBall.py
         if self.lambd == 0:
-            return 0 * theta
+            return 0.0
         else:
             return theta / np.maximum(1, np.abs(theta) / self.lambd)
-
-        # # called very often
-        # if self.lambd >= norm(theta, ord='inf'):
-        #     return theta  # already feasible
-        # else:
-        #     return theta /
-        # return theta - np.multiply(np.sign(theta), np.maximum(0, np.fabs(theta) - self.lambd * t))
-
-        #     # return theta - np.asarray(np.sign(theta)) * np.asarray(np.maximum(0, np.fabs(theta) - self.lambd * t))
-        # return theta - np.multiply(np.sign(theta), np.maximum(0, np.fabs(theta) - self.lambd * t))
-
-        # # return theta - cp.multiply(np.asarray(np.sign(theta)), np.asarray(np.maximum(0, np.fabs(theta) - self.lambd * t)))
-        # # return theta - cp.multiply(cp.sign(theta), cp.maximum(0, np.fabs(theta) - self.lambd * t))

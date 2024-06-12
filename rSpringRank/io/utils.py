@@ -47,7 +47,7 @@ def add_erroneous_edges(g, nid=0, times=1, method="single_point_mutation"):
 def D_operator(s):
     # output = np.zeros(n**2)
     n = len(s)
-    output = np.zeros(n**2 - n, dtype=np.float32)  # if we avoid the zero rows
+    output = np.zeros(n**2 - n, dtype=np.float64)  # if we avoid the zero rows
     k = 0
     for i in range(n):
         for j in range(i):
@@ -68,7 +68,7 @@ def D_operator_reg_t_sparse(a, s):
     if type(a) is not csr_matrix:
         raise TypeError("Please use a `csr_matrix` of scipy.sparse.")
     n = a.shape[0]
-    output_t = np.zeros(n, dtype=np.float32)  # if we avoid the zero rows
+    output_t = np.zeros(n, dtype=np.float64)  # if we avoid the zero rows
 
     for ind in zip(*a.nonzero()):
         i, j = ind[0], ind[1]
@@ -85,7 +85,7 @@ def D_operator_reg_t_sparse(a, s):
 @jit(nopython=True)
 def D_operator_reg_t(a, s):
     n = len(a)
-    output_t = np.zeros(n, dtype=np.float32)  # if we avoid the zero rows
+    output_t = np.zeros(n, dtype=np.float64)  # if we avoid the zero rows
     k = 0
     for i in range(n):
         for j in range(i):
@@ -104,7 +104,7 @@ def D_operator_reg_sparse(a, s):
     if type(a) is not csr_matrix:
         raise TypeError("Please use a `csr_matrix` of scipy.sparse.")
     n = a.shape[0]
-    output = np.zeros(n**2 - n, dtype=np.float32)  # if we avoid the zero rows
+    output = np.zeros(n**2 - n, dtype=np.float64)  # if we avoid the zero rows
     for ind in zip(*a.nonzero()):
         i, j = ind[0], ind[1]
         if i < j:
@@ -118,7 +118,7 @@ def D_operator_reg_sparse(a, s):
 @jit(nopython=True)
 def D_operator_reg(a, s):
     n = len(a)
-    output = np.zeros(n**2 - n, dtype=np.float32)  # if we avoid the zero rows
+    output = np.zeros(n**2 - n, dtype=np.float64)  # if we avoid the zero rows
     k = 0
     for i in range(n):
         for j in range(i):
@@ -135,7 +135,7 @@ def D_operator_b_sparse(a):
     if type(a) is not csr_matrix:
         raise TypeError("Please use a `csr_matrix` of scipy.sparse.")
     n = a.shape[0]
-    output = np.zeros(n**2 - n, dtype=np.float32)  # if we avoid the zero rows
+    output = np.zeros(n**2 - n, dtype=np.float64)  # if we avoid the zero rows
     for ind in zip(*a.nonzero()):
         i, j = ind[0], ind[1]
         if i < j:
@@ -149,7 +149,7 @@ def D_operator_b_sparse(a):
 @jit(nopython=True)
 def D_operator_b(a):
     n = len(a)
-    output = np.zeros(n**2 - n, dtype=np.float32)  # if we avoid the zero rows
+    output = np.zeros(n**2 - n, dtype=np.float64)  # if we avoid the zero rows
     # k = n
     k = 0
     for i in range(n):
@@ -171,8 +171,8 @@ def implicit2explicit(f, a, m, n):
     (for now, assume A is square for simplicity)
     A = A * identity
     """
-    e = np.zeros(n, dtype=np.float32)  # length n vector
-    A = np.zeros((m, n), dtype=np.float32)  # (n ** 2 - n) x n matrix
+    e = np.zeros(n, dtype=np.float64)  # length n vector
+    A = np.zeros((m, n), dtype=np.float64)  # (n ** 2 - n) x n matrix
     for i in range(n):
         # Loop over columns of identity
         e[i] = 1

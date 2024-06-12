@@ -197,12 +197,12 @@ class sum_squared_loss_conj(Loss):
         # And, explicit parentheses would be faster
         self.Bt_B_invSqrt_Btb = self.Bt_B_invSqrt @ (self.B.T @ self.b)
         self.Bt_B_invSqrt_ellt = self.Bt_B_invSqrt @ self.ell.T
-        self.Bt_B_invSqrt_ellt = np.ascontiguousarray(self.Bt_B_invSqrt_ellt)
+        self.Bt_B_invSqrt_ellt = np.ascontiguousarray(self.Bt_B_invSqrt_ellt).astype(np.float64)
         self.ell_BtB_inv_Bt_b = (
             self.ell @ (self.Bt_B_inv @ (self.B.T @ self.b))
         ).toarray()
         self.ell_BtB_inb_ellt = (self.ell @ (self.Bt_B_inv @ -self.ell.T)).toarray()
-        self.term_2 = (-0.5 * norm(self.b.toarray()) ** 2).astype(np.float32)
+        self.term_2 = (-0.5 * norm(self.b.toarray()) ** 2).astype(np.float64)
 
     @staticmethod
     @njit(cache=True)
@@ -215,7 +215,7 @@ class sum_squared_loss_conj(Loss):
 
     def dual2primal(self, v):
         d = self.Bt_B_inv @ (-self.ell.T @ v + self.B.T @ self.b)
-        return np.array(np.squeeze(d), dtype=np.float32).reshape(-1, 1)
+        return np.array(np.squeeze(d), dtype=np.float64).reshape(-1, 1)
 
     def predict(self):
         pass

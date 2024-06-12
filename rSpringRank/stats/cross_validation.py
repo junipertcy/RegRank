@@ -24,18 +24,19 @@
 # https://github.com/cdebacco/SpringRank/blob/master/matlab/crossValidation.m
 
 import numpy as np
-from scipy.sparse import find, triu
 from scipy.optimize import minimize_scalar, minimize
 from scipy.interpolate import interp1d
 import graph_tool.all as gt
-
+from collections import defaultdict
+from sklearn.model_selection import KFold
 from numba import njit
+from scipy.interpolate import RegularGridInterpolator
+from loky import get_reusable_executor
 
 
-def shuffle(arr, seed=42):
-    np.random.seed(seed)
-    np.random.shuffle(arr)
-    return arr
+import warnings
+
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
 @njit(parallel=True, cache=True)
@@ -61,204 +62,239 @@ def f(M, r, b):
         for j in range(n):
             d = r[i] - r[j]
             pij = (1 + np.exp(-2 * b * d)) ** (-1)
-            y += np.float32(d * (M[i, j] - (M[i, j] + M[j, i]) * pij))
+            y += np.float64(d * (M[i, j] - (M[i, j] + M[j, i]) * pij))
     return y
 
 
-def test(graph, params):
-    return
+@njit(cache=True)
+def compute_accuracy(A, s, beta_local, beta_global):
+    m = np.sum(A)
+    n = len(s)
+    y_local = 0
+    a_global = 0
+    for i in range(n):
+        for j in range(n):
+            d = s[i] - s[j]
+            p_local = (1 + np.exp(-2 * beta_local * d)) ** (-1)
+            p_global = (1 + np.exp(-2 * beta_global * d)) ** (-1)
+            # for local accuracy
+            y_local += abs(A[i, j] - (A[i, j] + A[j, i]) * p_local)
+            # for global accuracy
+            if p_global == 0 or p_global == 1:
+                pass
+            else:
+                a_global += A[i, j] * np.log(p_global) + A[j, i] * np.log(1 - p_global)
+    # cleanup
+    a_local = 1 - 0.5 * y_local / m
+    a_global /= m
+    return a_local, a_global
 
 
-def _get_folds(num_folds, M=None, seed=42):
-    # Size of each fold
-    if M is None:
-        raise ValueError("M must be specified.")
-    else:
-        foldSize = M // num_folds
-
-    # Shuffle interactions
-    idx = shuffle(np.arange(M), seed=seed)
-
-    # Build K-1 num_folds of equal size
-    folds = []
-    for f in range(num_folds - 1):
-        folds.append(idx[(f * foldSize) : ((f + 1) * foldSize)])
-
-    # Put the remainder in the final Kth fold
-    folds.append(idx[((num_folds - 1) * foldSize) :])
-    return folds
+def betaLocal(A, s):
+    M = A.toarray()
+    r = np.array(s, dtype=np.float64)
+    b = minimize_scalar(lambda _: negacc(M, r, _), bounds=(1e-6, 1000)).x
+    return b
 
 
-def get_folds(G, num_folds, seed=None):
-    if seed is None:
-        seed = np.random.randint(0, 1000)
-    else:
-        seed = int(seed)
-
-    A = gt.adjacency(G)
-    r, c, _, m = get_interacting_pairs(A)
-    folds = _get_folds(num_folds, M=m, seed=seed)
-    return folds, r, c, seed
-
-
-def split(G, num_folds, ind_folds, seed=None, return_graph=True):
-    G = G.copy()
-    folds, r, c, seed = get_folds(G, num_folds, seed=seed)
-    # print(f"seed = {seed}.")
-
-    # Build the test set of indices
-    test_i = r[folds[ind_folds]]
-    test_j = c[folds[ind_folds]]
-    test_ij = np.stack((test_i, test_j), axis=-1)
-    test_ji = np.stack((test_j, test_i), axis=-1)
-    train_mask = G.new_edge_property("bool", val=True)
-    test_mask = G.new_edge_property("bool", val=False)
-
-    # Build the training set by setting test set interactions to zero
-    train_mask.a[test_ij] = False
-    train_mask.a[test_ji] = False
-    test_mask.a[test_ij] = True
-    test_mask.a[test_ji] = True
-
-    if return_graph:
-        G.set_edge_filter(train_mask)
-        train_G = G.copy()
-        G.set_edge_filter(test_mask)
-        test_G = G.copy()
-        return train_G, test_G, test_G.num_edges()
-
-    # Build the test set
-    G.set_edge_filter(test_mask)
-    test_G = gt.adjacency(G)
-
-    numTestEdges = G.num_edges()
-
-    # Train SpringRank on the TRAIN set
-    G.set_edge_filter(train_mask)
-    train_G = gt.adjacency(G)
-    return train_G, test_G, numTestEdges
-
-
-def get_interacting_pairs(A):
-    # Find interacting pairs
-    r, c, v = find(triu(A + A.T))
-    # Number of interacting pairs
-    return r, c, v, len(v)
+def betaGlobal(A, s):
+    M = A.toarray()
+    r = np.array(s, dtype=np.float64)
+    b = minimize_scalar(lambda _: f(M, r, _) ** 2, bounds=(1e-6, 1000)).x
+    return b
 
 
 class CrossValidation(object):
-    def __init__(self, G, model) -> None:
-        self.G = G.copy()
-        self.model = model
+    def __init__(
+        self,
+        g,
+        n_folds=5,
+        n_subfolds=4,
+        n_reps=3,
+        seed=42,
+        use_loky=False,
+        **kwargs,
+    ) -> None:
+        self.all_edges = g.get_edges()
+        # self.G = G.copy()  # probably not needed, as we work on the edge indices
+        self.g = g
+        self.folds_per_rep = defaultdict(dict)
+        self.n_folds = n_folds
+        self.n_subfolds = n_subfolds
+        self.main_cv_splits = self.get_cv_realization(g, n_folds, seed=seed)
 
-    def train_and_validate(self, num_folds, reps, params=None):
+        self.seed = seed
+        self.subseeds = defaultdict(dict)
+        self.n_reps = n_reps
+        self.sub_cv_splits = defaultdict(
+            dict
+        )  # key structure: fold_id -> rep_id -> subfold_id -> edge_filter
+
+        if use_loky:
+            max_workers = kwargs.get("max_workers", 10)
+            self.executor = get_reusable_executor(max_workers=max_workers, timeout=100)
+        else:
+            self.executor = None
+
+        self.cv_alpha_a = defaultdict(dict)
+        self.cv_alpha_L = defaultdict(dict)
+        # for idx, (train, test) in enumerate(self.kf.split(self.all_edges)):
+        #     [idx] = g.new_edge_property("bool", val=True)
+        #     for _ in test:
+        #         self.edge_filter_dict[idx][self.all_edges[_]] = False
+
+    @staticmethod
+    def get_cv_realization(graph, n_splits, seed=None):
+        # we do not control the random state here,
+        # but ensure that each realization creates 5 trials
+        # and each trial fairly fitted with an alpha to evaluate the accuracy
+        kf = KFold(n_splits=n_splits, shuffle=True, random_state=seed)
+        all_edges = graph.get_edges()
+        _edge_filter_dict = {}
+
+        for idx, (train, test) in enumerate(kf.split(all_edges)):
+            _edge_filter_dict[idx] = graph.new_edge_property("bool", val=True)
+            for _ in test:
+                _edge_filter_dict[idx][all_edges[_]] = False
+        return _edge_filter_dict
+
+    def gen_train_validate_splits(self, subgraph, seed=None, **kwargs):
+        fold_id = kwargs.get("fold_id", None)
+        self.subseeds[fold_id] = np.random.randint(0, int(1e3), self.n_reps)
+        for rep in range(self.n_reps):
+            self.sub_cv_splits[fold_id][rep] = self.get_cv_realization(
+                subgraph, self.n_subfolds, seed=self.subseeds[fold_id][rep]
+            )
+
+    def gen_all_train_validate_splits(self):
+        for fold in range(self.n_folds):
+            subgraph = gt.GraphView(self.g, efilt=self.main_cv_splits[fold])
+            self.gen_train_validate_splits(subgraph, self.n_reps, fold_id=fold)
+
+    def train_and_validate(self, model, fold_id, params=None, interp=None, **kwargs):
         # alpha_v = params.get("vanilla", np.logspace(-1, 2, 10))
         # alpha_a, lambd_a = params.get("annotated", (np.logspace(-1, 2, 10), np.logspace(-1, 2, 10)))
+        self.model = model
+        gv = gt.GraphView(self.g, efilt=self.main_cv_splits[fold_id])
         if self.model.method == "vanilla":
-            alpha_v = params
+            list_alpha = params
+            self.y_a, self.y_L = [], []  # just temp vals, for debugging
+
+            for alpha in list_alpha:
+                # _sig_a, _sig_L = self._train_and_validate(num_folds, reps, params=alpha)
+                sig_a_list = []
+                sig_L_list = []
+                for rep in range(self.n_reps):
+                    # five sub-folds (between train and validate)
+                    for subfold in range(self.n_subfolds):
+                        efilter = self.sub_cv_splits[fold_id][rep][subfold]
+                        gvv = gt.GraphView(gv, efilt=efilter)
+                        gvv_inv = gt.GraphView(gv, efilt=np.logical_not(efilter))
+                        adj_gvv = gt.adjacency(gvv)
+
+                        ranking = self.model.fit(gvv, alpha=alpha, printEvery=0)[
+                            "primal"
+                        ]
+                        bloc0 = betaLocal(adj_gvv, ranking)
+                        bloc1 = betaGlobal(adj_gvv, ranking)
+                        sig_a, sig_L = compute_accuracy(
+                            gt.adjacency(gvv_inv).toarray(), ranking, bloc0, bloc1
+                        )
+                        sig_a_list.append(sig_a)
+                        sig_L_list.append(sig_L)
+                # we want to minimize the negative accuracy
+                self.y_a.append(-np.mean(sig_a_list))
+                # we want to minimize the negative log likelihood
+                self.y_L.append(-np.mean(sig_L_list))
+
+            f_a = interp1d(
+                list_alpha,
+                self.y_a,
+                kind="quadratic",
+                fill_value="extrapolate",
+                assume_sorted=True,
+            )
+            f_L = interp1d(
+                list_alpha,
+                self.y_L,
+                kind="quadratic",
+                fill_value="extrapolate",
+                assume_sorted=True,
+            )
+            bnds = ((0, None),)
+            cv_alpha_a = minimize(f_a, x0=1, bounds=bnds).x[0]
+            cv_alpha_L = minimize(f_L, x0=1, bounds=bnds).x[0]
+            # print(cv_alpha_a, cv_alpha_L)
+            self.cv_alpha_a["vanilla"][fold_id] = cv_alpha_a
+            self.cv_alpha_L["vanilla"][fold_id] = cv_alpha_L
+
         elif self.model.method == "annotated":
-            alpha_a, lambd_a = params
 
-        list_alpha, y_a, y_L = [], [], []
-        for alpha in alpha_v:
-            list_alpha.append(alpha)
-            _sig_a, _sig_L = self.train_and_validate_sub(num_folds, reps, params=alpha)
-            y_a.append(-np.mean(_sig_a.reshape(1, -1)))
-            y_L.append(-np.mean(_sig_L.reshape(1, -1)))
-            # print(alpha, "-->", y_a, y_L)
-        f_a = interp1d(list_alpha, y_a, kind='quadratic', fill_value='extrapolate', assume_sorted=True)
-        f_L = interp1d(list_alpha, y_L, kind='quadratic', fill_value='extrapolate', assume_sorted=True)
-        print(y_a)
-        print(y_L)
-        bnds = ((0, None),)
-        cv_alpha_a = minimize(f_a, x0=1, bounds=bnds).x[0]
-        cv_alpha_L = minimize(f_L, x0=1, bounds=bnds).x[0]
-        print(f"cv_alpha_a = {cv_alpha_a}. || cv_alpha_L = {cv_alpha_L}.")
+            list_alpha, list_lambd = params
+            list_alpha_interp, list_lambd_interp = interp
 
+            self.y_a, self.y_L = [], []  # just temp vals, for debugging
+            for alpha in list_alpha:
+                _y_a = []
+                _y_L = []
+                # _sig_a, _sig_L = self._train_and_validate(num_folds, reps, params=alpha)
+                for lambd in list_lambd:
+                    sig_a_list = []
+                    sig_L_list = []
+                    for rep in range(self.n_reps):
+                        # five sub-folds (between train and validate)
+                        for subfold in range(self.n_subfolds):
+                            efilter = self.sub_cv_splits[fold_id][rep][subfold]
+                            gvv = gt.GraphView(gv, efilt=efilter)
+                            gvv_inv = gt.GraphView(gv, efilt=np.logical_not(efilter))
+                            adj_gvv = gt.adjacency(gvv)
+                            ranking = self.model.fit(
+                                gvv, alpha=alpha, lambd=lambd, printEvery=0
+                            )["primal"]
+                            adj_gvv = gt.adjacency(gvv)
+                            bloc0 = betaLocal(adj_gvv, ranking)
+                            bloc1 = betaGlobal(adj_gvv, ranking)
+                            sig_a, sig_L = compute_accuracy(
+                                gt.adjacency(gvv_inv).toarray(), ranking, bloc0, bloc1
+                            )
+                            sig_a_list.append(sig_a)
+                            sig_L_list.append(sig_L)
+                    _y_a.append(-np.mean(sig_a_list))
+                    _y_L.append(-np.mean(sig_L_list))
+                self.y_a.append(_y_a)
+                self.y_L.append(_y_L)
+            interp_a = RegularGridInterpolator(
+                (list_alpha, list_lambd), self.y_a, method="linear"
+            )
+            interp_L = RegularGridInterpolator(
+                (list_alpha, list_lambd), self.y_L, method="linear"
+            )
 
-    def train_and_validate_sub(self, num_folds, reps, params=None):
-        # Preallocate
-        sig_a = np.zeros(reps * num_folds)
-        sig_L = np.zeros(reps * num_folds)
+            X, Y = np.meshgrid(list_alpha_interp, list_lambd_interp, indexing="ij")
+            points = np.array([X.ravel(), Y.ravel()]).T
+            interpolated_values_a = interp_a(points).reshape(100, 100)
 
-        if self.model.method == "vanilla":
-            alpha_v = params
-        elif self.model.method == "annotated":
-            alpha_a, lambd_a = params
+            min_value_a = np.min(interpolated_values_a)
+            min_index_a = np.unravel_index(
+                np.argmin(interpolated_values_a), interpolated_values_a.shape
+            )
+            min_point_a = (
+                list_alpha_interp[min_index_a[0]],
+                list_lambd_interp[min_index_a[1]],
+            )
 
-        # Iterate over reps
-        for rep in range(reps):
-            seed = np.random.randint(0, 1000)
-            # Iterate over folds
-            for ind_folds in range(num_folds):
-                # print(
-                #     "Cross validation progress: Rep {}/{}, Fold {}/{}.".format(
-                #         rep + 1, reps, ind_folds + 1, num_folds
-                #     )
-                # )
+            interpolated_values_L = interp_L(points).reshape(100, 100)
 
-                # Bookkeeping
-                foldrep = ind_folds + rep * num_folds
-                train_G, validate_G, numTestEdges = split(self.G, num_folds, ind_folds, seed=seed)
+            min_value_L = np.min(interpolated_values_L)
+            min_index_L = np.unravel_index(
+                np.argmin(interpolated_values_L), interpolated_values_L.shape
+            )
+            min_point_L = (
+                list_alpha_interp[min_index_L[0]],
+                list_lambd_interp[min_index_L[1]],
+            )
 
-                if self.model.method == "vanilla":
-                    ranking = self.model.fit(train_G, alpha=alpha_v)["primal"]
-                elif self.model.method == "annotated":
-                    ranking = self.model.fit(train_G, alpha=alpha_a, lambd=lambd_a)["primal"]
-
-                train_A = gt.adjacency(train_G)
-                bloc0 = self.betaLocal(train_A, ranking)
-                bglob0 = self.betaGlobal(train_A, ranking)
-
-                # SpringRank accuracies on VALIDATION set
-                validate_A = gt.adjacency(validate_G)
-                validate_A = validate_A.toarray()
-                sig_a[foldrep] = self.localAccuracy(validate_A, ranking, bloc0)
-                sig_L[foldrep] = (
-                    -self.globalAccuracy(validate_A, ranking, bglob0) / numTestEdges
-                )
-        return sig_a, sig_L
-
-    @staticmethod
-    @njit(cache=True)
-    def localAccuracy(A, s, b):
-        m = np.sum(A)
-        n = len(s)
-        y = 0
-        for i in range(n):
-            for j in range(n):
-                d = s[i] - s[j]
-                p = (1 + np.exp(-2 * b * d)) ** (-1)
-                y = y + abs(A[i, j] - (A[i, j] + A[j, i]) * p)
-        # cleanup
-        a = 1 - 0.5 * y / m
-        return a
-
-    @staticmethod
-    @njit(cache=True)
-    def globalAccuracy(A, s, b):
-        n = len(s)
-        y = 0
-        for i in range(n):
-            for j in range(n):
-                d = s[i] - s[j]
-                p = (1 + np.exp(-2 * b * d)) ** (-1)
-                if p == 0 or p == 1:
-                    pass
-                else:
-                    y = y + A[i, j] * np.log(p) + A[j, i] * np.log(1 - p)
-        return y
-
-    @staticmethod
-    def betaLocal(A, s):
-        M = A.toarray()
-        r = np.array(s, dtype=np.float32)
-        b = minimize_scalar(lambda _: negacc(M, r, _), bounds=(1e-6, 1000)).x
-        return b
-
-    @staticmethod
-    def betaGlobal(A, s):
-        M = A.toarray()
-        r = np.array(s, dtype=np.float32)
-        b = minimize_scalar(lambda _: f(M, r, _) ** 2, bounds=(1e-6, 1000)).x
-        return b
+            print(f"(a) Minimum value: {min_value_a} at point: {min_point_a}")
+            print(f"(L) Minimum value: {min_value_L} at point: {min_point_L}")
+            self.cv_alpha_a["annotated"][fold_id] = min_point_a
+            self.cv_alpha_L["annotated"][fold_id] = min_point_L
