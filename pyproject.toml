@@ -1,6 +1,15 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "rspringrank"
+version = "0.2.0"
+description = "Regularized methods for efficient ranking in networks"
+authors = ["Tzu-Chi Yen <tzuchi.yen@colorado.edu>"]
+license = "LGPL-3.0-or-later"
+readme = "README.md"
+
 
 [project]
 name = "rSpringRank"
@@ -34,7 +43,15 @@ classifiers = [
 
 dynamic = ["version"]
 
-dependencies = [ "networkx", "scipy", "cvxpy", "matplotlib", "numba", "bson", "pymongo"]
+dependencies = [
+    "networkx",
+    "scipy",
+    "cvxpy",
+    "matplotlib",
+    "numba",
+    "bson",
+    "pymongo",
+]
 
 [project.optional-dependencies]
 dev = ["pytest", "click", "sphinx"]
@@ -47,8 +64,12 @@ documentation = 'https://docs.netscied.tw/rSpringRank/index.html'
 file = "README.md"
 content-type = "text/markdown"
 
-[tool.setuptools]
-packages = ["rSpringRank"]
 
-[tool.setuptools_scm]
-write_to = "rSpringRank/_version.py"
+[tool.poetry.dependencies]
+python = "^3.10"
+cvxpy = "^1.5.1"
+
+[tool.poetry.group.dev.dependencies]
+Sphinx = "^7.3.7"
+intersphinx-registry = "^0.2406.4"
+numpydoc = "^1.7.0"

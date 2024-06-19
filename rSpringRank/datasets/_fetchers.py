@@ -56,6 +56,20 @@ def us_air_traffic():
         return graph
 
 
+def at_migrations():
+    fname = fetch_data("at_migrations.gt.zst")
+    fname = Path(fname)
+    dctx = zstd.ZstdDecompressor()
+
+    with tempfile.TemporaryDirectory(delete=True) as temp_dir:
+        temp_dir_path = Path(temp_dir)
+        gt_fname = temp_dir_path / fname.with_suffix("").name
+        with open(fname, "rb") as ifh, open(gt_fname, "wb") as ofh:
+            dctx.copy_stream(ifh, ofh)
+        graph = gt.load_graph(gt_fname.as_posix())
+        return graph
+
+
 def PhD_exchange():
     fname = fetch_data("PhD_exchange.txt")
     fname_school_names = fetch_data("school_names.txt")
@@ -106,6 +120,7 @@ def PhD_exchange():
 
     def school_name(n):
         return linecache.getline(fname_school_names, n).replace("\n", "")[:-1]
+
     # print(school_name(165))  # >> University of Michigan
     for vertex in g.vertices():
         vname[vertex] = school_name(int(id2name[vertex]))

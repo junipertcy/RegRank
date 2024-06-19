@@ -21,7 +21,7 @@ dependencies:
   - numba
   - scikit-learn
   - gurobi
-  - loky
+  - marimo
   # rSpringRank.datasets dependency
   - pooch  
   # For testing and benchmarking
@@ -34,7 +34,7 @@ dependencies:
   - setuptools<67.3  # avoid pkg_resources deprecation warnings from MPL/scikit-umfpack
   - matplotlib
   - sphinx-markdown-tables
-  - sphinx_rtd_theme
+  - sphinx_rtd_theme==2.0.0
   - recommonmark
   - numpydoc
   - mathjax

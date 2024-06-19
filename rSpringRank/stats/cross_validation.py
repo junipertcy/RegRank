@@ -31,7 +31,6 @@ from collections import defaultdict
 from sklearn.model_selection import KFold
 from numba import njit
 from scipy.interpolate import RegularGridInterpolator
-from loky import get_reusable_executor
 
 
 import warnings
@@ -90,6 +89,37 @@ def compute_accuracy(A, s, beta_local, beta_global):
     return a_local, a_global
 
 
+# def compute_rum_accuracy(A, s):
+#     g = gt.Graph()
+#     g.add_edge_list(A)
+    
+#     m = np.sum(A)
+#     n = len(s)
+#     y_local = 0
+#     a_global = 0
+#     for i in range(n):
+#         for j in range(n):
+#             if i == j:
+#                 continue
+#             if A[i, j] == 0 and A[j, i] == 0:
+#                 continue
+#             if A[i, j] 
+#             d = s[i] - s[j]
+#             p_local = (1 + np.exp(-2 * beta_local * d)) ** (-1)
+#             p_global = (1 + np.exp(-2 * beta_global * d)) ** (-1)
+#             # for local accuracy
+#             y_local += abs(A[i, j] - (A[i, j] + A[j, i]) * p_local)
+#             # for global accuracy
+#             if p_global == 0 or p_global == 1:
+#                 pass
+#             else:
+#                 a_global += A[i, j] * np.log(p_global) + A[j, i] * np.log(1 - p_global)
+#     # cleanup
+#     a_local = 1 - 0.5 * y_local / m
+#     a_global /= m
+#     return a_local, a_global
+
+
 def betaLocal(A, s):
     M = A.toarray()
     r = np.array(s, dtype=np.float64)
@@ -112,7 +142,6 @@ class CrossValidation(object):
         n_subfolds=4,
         n_reps=3,
         seed=42,
-        use_loky=False,
         **kwargs,
     ) -> None:
         self.all_edges = g.get_edges()
@@ -129,12 +158,6 @@ class CrossValidation(object):
         self.sub_cv_splits = defaultdict(
             dict
         )  # key structure: fold_id -> rep_id -> subfold_id -> edge_filter
-
-        if use_loky:
-            max_workers = kwargs.get("max_workers", 10)
-            self.executor = get_reusable_executor(max_workers=max_workers, timeout=100)
-        else:
-            self.executor = None
 
         self.cv_alpha_a = defaultdict(dict)
         self.cv_alpha_L = defaultdict(dict)
@@ -172,8 +195,6 @@ class CrossValidation(object):
             self.gen_train_validate_splits(subgraph, self.n_reps, fold_id=fold)
 
     def train_and_validate(self, model, fold_id, params=None, interp=None, **kwargs):
-        # alpha_v = params.get("vanilla", np.logspace(-1, 2, 10))
-        # alpha_a, lambd_a = params.get("annotated", (np.logspace(-1, 2, 10), np.logspace(-1, 2, 10)))
         self.model = model
         gv = gt.GraphView(self.g, efilt=self.main_cv_splits[fold_id])
         if self.model.method == "vanilla":
@@ -181,7 +202,6 @@ class CrossValidation(object):
             self.y_a, self.y_L = [], []  # just temp vals, for debugging
 
             for alpha in list_alpha:
-                # _sig_a, _sig_L = self._train_and_validate(num_folds, reps, params=alpha)
                 sig_a_list = []
                 sig_L_list = []
                 for rep in range(self.n_reps):
@@ -237,7 +257,6 @@ class CrossValidation(object):
             for alpha in list_alpha:
                 _y_a = []
                 _y_L = []
-                # _sig_a, _sig_L = self._train_and_validate(num_folds, reps, params=alpha)
                 for lambd in list_lambd:
                     sig_a_list = []
                     sig_L_list = []

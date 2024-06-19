@@ -19,13 +19,24 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import importlib as _importlib
+import os
 
 __version__ = "0.0.1"
 
-from .optimize import *
-from .datasets import *
-from .io import *
-from .stats import *
+import warnings
+
+from rSpringRank import *
+import rSpringRank
+from rSpringRank.datasets import *
+import rSpringRank.datasets
+from rSpringRank.io import *
+import rSpringRank.io
+from rSpringRank.optimize import *
+import rSpringRank.optimize
+from rSpringRank.stats import *
+import rSpringRank.stats
+from rSpringRank.stats import *
+import rSpringRank.stats
 
 __package__ = "rSpringRank"
 __title__ = "rSpringRank: Regularized methods for efficient ranking in networks."
@@ -37,19 +48,26 @@ __author__ = """\n""".join(
         "Tzu-Chi Yen <tzuchi.yen@colorado.edu>",
     ]
 )
-__URL__ = ""
+__URL__ = "https://github.com/junipertcy/rSpringRank"
 __version__ = "0.8.0"
 __release__ = ""
 
 
 submodules = ["datasets", "io", "optimize", "stats"]
-
-__all__ = submodules + [
-    "LowLevelCallable",
-    "test",
-    "show_config",
+dunder = [
     "__version__",
+    "__package__",
+    "__title__",
+    "__description__",
+    "__author__",
+    "__URL__",
+    "__license__",
+    "__release__",
 ]
+__all__ = submodules + [
+    "show_config",
+] + dunder
+
 
 
 def __dir__():
@@ -64,3 +82,8 @@ def __getattr__(name):
             return globals()[name]
         except KeyError:
             raise AttributeError(f"Module 'rSpringRank' has no attribute '{name}'")
+
+
+def show_config():
+    """Show ``rSpringRank`` build configuration."""
+    print("uname:", " ".join(os.uname()))

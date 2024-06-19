@@ -168,7 +168,7 @@ def cast2sum_squares_form(data, alpha, regularization=True):  # TODO: this is sl
         A = gt.adjacency(data)
     elif type(data) is csr_matrix:
         A = data
-    
+
     # print(f"our method: adj = {A.toarray()[:5,:5]}")
     if A.shape[0] != A.shape[1]:
         raise ValueError("Are you sure that A is asymmetric?")
@@ -204,8 +204,8 @@ def cast2sum_squares_form(data, alpha, regularization=True):  # TODO: this is sl
         col[counter_B] = i
         # val = next(data_iter)
         data[counter_B] = -(val**0.5)  # TODO: check sign
-
         counter_B += 1
+
         row[counter_B] = _row
         col[counter_B] = j
         data[counter_B] = val**0.5
@@ -320,43 +320,54 @@ def filter_by_year(g, from_year=1946, to_year=2006, top_n=70):
     return gt.GraphView(g, efilt=cond, vfilt=lambda v: vcond(v))
 
 
-def compute_ell(g, sparse=True):
+def compute_ell(g, key="goi", sparse=True):
     if (type(g) is not gt.Graph) and (type(g) is not gt.GraphView):
         raise TypeError("g should be of type `graph_tool.Graph`.")
     try:
-        ctr_classes = Counter(g.vp["goi"])
-    except KeyError:
+        ctr_classes = Counter(g.vp[key])
+    except KeyError as e:
+        print(f"KeyError: {e}; return None")
         return None
     len_classes = len(ctr_classes)
     comb_classes = combinations(ctr_classes, 2)
-    mb = list(g.vp["goi"])
+    mb = list(g.vp[key])
+    dim_0 = comb(len_classes, 2)
+    dim_1 = len(g.get_vertices())
 
     if sparse:
-        row, col, data = [], [], []
+        row, col, data = [
+            np.zeros((len_classes - 1) * dim_1, dtype=np.float64) for _ in range(3)
+        ]
+        counter = 0
     else:
-        ell = np.zeros([comb(len_classes, 2), len(g.get_vertices())], dtype=np.float64)
+        ell = np.zeros([dim_0, dim_1], dtype=np.float64)
+    k = 0
     for idx, (i, j) in enumerate(comb_classes):
+        k += 1
         for _, vtx in enumerate(g.vertices()):
             # sometimes we feed g as a gt.GraphView
             # in this case, vtx will return the (unfiltered) vertex id
             if mb[_] == i:
                 if sparse:
-                    row.append(idx)
-                    col.append(_)
-                    data.append(-ctr_classes[i] ** -1)
+                    row[counter] = idx
+                    col[counter] = _
+                    data[counter] = -ctr_classes[i] ** -1
+                    counter += 1
                 else:
                     ell[idx][_] = -ctr_classes[i] ** -1
             elif mb[_] == j:
                 if sparse:
-                    row.append(idx)
-                    col.append(_)
-                    data.append(ctr_classes[j] ** -1)
+                    row[counter] = idx
+                    col[counter] = _
+                    data[counter] = ctr_classes[j] ** -1
+                    counter += 1
                 else:
                     ell[idx][_] = ctr_classes[j] ** -1
+
     if sparse:
         ell = csr_matrix(
             (data, (row, col)),
-            shape=(comb(len_classes, 2), len(g.get_vertices())),
+            shape=(dim_0, dim_1),
             dtype=np.float64,
         )
     return ell

@@ -38,16 +38,19 @@ source_parsers = {
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx_rtd_theme',
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.autosummary',
+    'sphinx_autopackagesummary',
     'numpydoc',
     'sphinx.ext.extlinks',
     'sphinx.ext.viewcode',
-    'extlinks_fancy'
+    'extlinks_fancy',
 ]
+autosummary_generate = True
 numpydoc_show_class_members = False
 mathjax_path = "MathJax/MathJax.js?config=default"
 
@@ -102,7 +105,7 @@ html_context = {
   'display_github': True,
   'github_user': 'junipertcy',
   'github_repo': 'rSpringRank',
-  'github_version': 'master/docs/'
+  'github_version': 'main/docs/'
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
