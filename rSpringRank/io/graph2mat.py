@@ -116,29 +116,29 @@ def cast2sum_squares_form_t(
                 col += _col_t_plus_1
                 data += [-(lambd**0.5)] * shape
     if separate:
-        B = csr_matrix(
+        B = csc_matrix(
             (data, (row, col)),
             shape=(T * shape**2, T * shape),
             dtype=np.float64,
         )
-        b = csr_matrix(
+        b = csc_matrix(
             (data_b, (row_b, col_b)),
             shape=(T * shape**2, 1),
             dtype=np.float64,
         )
-        B_T = csr_matrix(
+        B_T = csc_matrix(
             (data_T, (row_T, col_T)),
             shape=((T - 1) * shape, T * shape),
             dtype=np.float64,
         )
         return B, b, B_T
     else:
-        B = csr_matrix(
+        B = csc_matrix(
             (data, (row, col)),
             shape=(T * shape**2 + (T - 1) * shape, T * shape),
             dtype=np.float64,
         )
-        b = csr_matrix(
+        b = csc_matrix(
             (data_b, (row_b, col_b)),
             shape=(T * shape**2 + (T - 1) * shape, 1),
             dtype=np.float64,
@@ -166,7 +166,7 @@ def cast2sum_squares_form(data, alpha, regularization=True):  # TODO: this is sl
     """
     if type(data) is gt.Graph or type(data) is gt.GraphView:
         A = gt.adjacency(data)
-    elif type(data) is csr_matrix:
+    elif type(data) is csc_matrix:
         A = data
 
     # print(f"our method: adj = {A.toarray()[:5,:5]}")
@@ -223,13 +223,13 @@ def cast2sum_squares_form(data, alpha, regularization=True):  # TODO: this is sl
             col[counter_B] = _ - __
             data[counter_B] = alpha**0.5
             counter_B += 1
-        B = csr_matrix((data, (row, col)), shape=(shape**2, shape), dtype=np.float64)
-        b = csr_matrix((data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float64)
+        B = csc_matrix((data, (row, col)), shape=(shape**2, shape), dtype=np.float64)
+        b = csc_matrix((data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float64)
     else:
-        B = csr_matrix(
+        B = csc_matrix(
             (data, (row, col)), shape=(shape**2 - shape, shape), dtype=np.float64
         )
-        b = csr_matrix(
+        b = csc_matrix(
             (data_b, (row_b, col_b)), shape=(shape**2 - shape, 1), dtype=np.float64
         )
     return B, b
@@ -281,10 +281,10 @@ def compute_cache_from_data(data, alpha, regularization=True):
     Bt_B_invSqrt = sqrtm(Bt_B_inv.toarray())
 
     return {
-        "B": B,  # in csr_matrix format and also is sparse
-        "b": b,  # in csr_matrix format and also is sparse
-        "ell": _ell,  # in csr_matrix format and is also sparse
-        "Bt_B_inv": Bt_B_inv,  # in csr_matrix format, but it's actually dense
+        "B": B,  # in csc_matrix format and also is sparse
+        "b": b,  # in csc_matrix format and also is sparse
+        "ell": _ell,  # in csc_matrix format and is also sparse
+        "Bt_B_inv": Bt_B_inv,  # in csc_matrix format, but it's actually dense
         "Bt_B_invSqrt": Bt_B_invSqrt,  # in np.ndarray for and is also dense
     }
 
@@ -365,7 +365,7 @@ def compute_ell(g, key="goi", sparse=True):
                     ell[idx][_] = ctr_classes[j] ** -1
 
     if sparse:
-        ell = csr_matrix(
+        ell = csc_matrix(
             (data, (row, col)),
             shape=(dim_0, dim_1),
             dtype=np.float64,

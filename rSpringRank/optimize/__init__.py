@@ -1,5 +1,5 @@
-from .fit import rSpringRank
+from .models import SpringRank, rSpringRank
 
-__all__ = ['rSpringRank']
+__all__ = ['SpringRank', 'rSpringRank']
 
 

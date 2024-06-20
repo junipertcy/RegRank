@@ -44,7 +44,6 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.autosummary',
-    'sphinx_autopackagesummary',
     'numpydoc',
     'sphinx.ext.extlinks',
     'sphinx.ext.viewcode',

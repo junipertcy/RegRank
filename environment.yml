@@ -9,7 +9,6 @@ channels:
   - conda-forge
   - gurobi
 dependencies:
-  - python==3.12
   - ipykernel
   - graph-tool
   - cvxpy
@@ -26,6 +25,7 @@ dependencies:
   - pooch  
   # For testing and benchmarking
   - pytest
+  - scalene
   # For building docs
   - sphinx
   - intersphinx-registry
