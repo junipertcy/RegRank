@@ -28,6 +28,7 @@ dependencies:
   - scalene
   # For building docs
   - sphinx
+  - myst-parser
   - intersphinx-registry
   - numpydoc
   - ipython

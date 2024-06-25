@@ -257,10 +257,11 @@ class rSpringRank(object):
             # In this case, we use the dual-based proximal gradient descent algorithm
             # to solve the problem.
             if self.cvxpy:
-                raise NotImplementedError("CVXPY not implemented for annotated.")
+                raise NotImplementedError("Not implemented for method='annotated'.")
             else:
+                goi = kwargs.get("goi", None)
                 self.sslc = sum_squared_loss_conj()
-                self.sslc.setup(data, alpha=self.alpha)
+                self.sslc.setup(data, alpha=self.alpha, goi=goi)
                 self.fo_setup["f"] = lambda x: self.sslc.evaluate(x)
                 self.fo_setup["grad"] = lambda x: self.sslc.prox(x)
                 self.fo_setup["prox"] = lambda x, t: same_mean_reg(

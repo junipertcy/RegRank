@@ -48,6 +48,7 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx.ext.viewcode',
     'extlinks_fancy',
+    'myst_parser',  # markdown support
 ]
 autosummary_generate = True
 numpydoc_show_class_members = False
@@ -85,7 +86,6 @@ pygments_style = 'sphinx'
 #
 html_theme = 'sphinx_rtd_theme'
 html_theme_options = {
-    'canonical_url': 'https://docs.netscied.tw/rSpringRank/index.html',
     'logo_only': False,
     'display_version': True,
     'prev_next_buttons_location': 'bottom',

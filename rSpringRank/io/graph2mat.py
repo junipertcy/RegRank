@@ -259,7 +259,7 @@ def compute_cache_from_data_t(
     }
 
 
-def compute_cache_from_data(data, alpha, regularization=True):
+def compute_cache_from_data(data, alpha, regularization=True, **kwargs):
     """_summary_
 
     Args:
@@ -275,8 +275,9 @@ def compute_cache_from_data(data, alpha, regularization=True):
     dictionary: _description_
 
     """
+    goi = kwargs.get("goi", None)
     B, b = cast2sum_squares_form(data, alpha, regularization=regularization)
-    _ell = compute_ell(data)
+    _ell = compute_ell(data, key=goi)
     Bt_B_inv = compute_Bt_B_inv(B)
     Bt_B_invSqrt = sqrtm(Bt_B_inv.toarray())
 
@@ -320,14 +321,16 @@ def filter_by_year(g, from_year=1946, to_year=2006, top_n=70):
     return gt.GraphView(g, efilt=cond, vfilt=lambda v: vcond(v))
 
 
-def compute_ell(g, key="goi", sparse=True):
+def compute_ell(g, key=None, sparse=True):
     if (type(g) is not gt.Graph) and (type(g) is not gt.GraphView):
         raise TypeError("g should be of type `graph_tool.Graph`.")
     try:
         ctr_classes = Counter(g.vp[key])
-    except KeyError as e:
-        print(f"KeyError: {e}; return None")
-        return None
+    except KeyError:
+        raise AttributeError(
+            "Please provide a 'group of interest' for the vertex property, " +
+            "so we can compute the annotated rankings."
+        )
     len_classes = len(ctr_classes)
     comb_classes = combinations(ctr_classes, 2)
     mb = list(g.vp[key])

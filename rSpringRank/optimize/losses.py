@@ -166,9 +166,10 @@ class sum_squared_loss_conj(Loss):
         return term_1 + term_2
 
     def setup(self, data, alpha, **kwargs):
+        goi = kwargs.get("goi", None)
         method = kwargs.get("method", "annotated")
         if method == "annotated":
-            cache = compute_cache_from_data(data, alpha=alpha)
+            cache = compute_cache_from_data(data, alpha=alpha, goi=goi)
         elif method == "time::l1":
             lambd = kwargs.get("lambd", 1)
             from_year = kwargs.get("from_year", 1960)

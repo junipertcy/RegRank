@@ -1,3 +1,21 @@
+"""
+``rSpringRank.stats``
+---------------------
+
+This module contains miscellaneous statistical functions.
+
+Summary
++++++++
+
+.. autosummary::
+   :nosignatures:
+   :toctree: autosummary
+
+   PeerInstitution
+   PhDExchange
+   CrossValidation
+
+"""
 from .experiments import PeerInstitution, PhDExchange
 from .cross_validation import CrossValidation
 
