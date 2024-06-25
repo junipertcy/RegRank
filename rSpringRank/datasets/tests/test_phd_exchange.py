@@ -52,7 +52,7 @@ def compute(goi):
     def prox_fcn(x):
         return same_mean_reg(lambd=1).evaluate(x)
 
-    x0 = np.random.rand(num_pairs_classes, 1).astype(np.float32)
+    x0 = np.random.rand(num_pairs_classes, 1).astype(np.float64)
 
     # errFcn = lambda x: norm(x - xTrue) / norm(xTrue)
     Lip_c = sslc.find_Lipschitz_constant()

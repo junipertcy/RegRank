@@ -49,7 +49,7 @@ class BaseModel:
 class SpringRank:
     def __init__(self, alpha=0):
         self.alpha = alpha
-        pass
+        # pass
         # self.change_base_model(BaseModel)
 
     def fit_scaled(self, data, scale=0.75):
@@ -74,7 +74,7 @@ class SpringRank:
         # print(f"bicgstab: adj = {adj.toarray()[:5,:5]}")
         ranks = self.get_ranks(adj)
 
-        info = {"rank": ranks}
+        info = {"rank": ranks.reshape(-1, 1)}
         return info
 
     # below came from Hunter's code
@@ -216,6 +216,10 @@ class rSpringRank(object):
         self.alpha = alpha
         self.lambd = kwargs.get("lambd", 1)
         self.cvxpy = kwargs.get("cvxpy", False)
+        self.bicgstab = kwargs.get("bicgstab", True)
+        if np.sum([self.cvxpy, self.bicgstab]) > 1:
+            raise ValueError("Only one of cvxpy and bicgstab can be True.")
+        
         if self.method == "vanilla":
             if self.cvxpy:
                 v_cvx = vanilla_cvx(data, alpha=self.alpha)
@@ -231,6 +235,8 @@ class rSpringRank(object):
                 )
                 self.result["primal"] = primal
                 self.result["f_primal"] = problem.value
+            elif self.bicgstab:
+                self.result["primal"] = SpringRank(alpha=self.alpha).fit(data)["rank"]
             else:
                 B, b = cast2sum_squares_form(data, alpha=self.alpha)
                 b_array = b.toarray()

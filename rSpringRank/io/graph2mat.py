@@ -290,7 +290,7 @@ def compute_cache_from_data(data, alpha, regularization=True):
 
 
 def compute_Bt_B_inv(B):
-    return inv(B.T @ B)  # only for sparse matrices
+    return inv((B.T @ B).tocsc())  # only for sparse matrices
 
 
 def grad_g_star(B, b, v):

@@ -16,7 +16,7 @@ def compute(obj, alpha):
     problem.solve(verbose=False)
 
     v_cvx_output = primal_s.value.reshape(
-        -1,
+        -1, 1
     )
 
     sr = SpringRank(alpha=alpha)

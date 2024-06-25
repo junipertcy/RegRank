@@ -1,3 +1,8 @@
+# scalene output
+profile.html
+profile.json
+
+# misc
 deploy.sh
 examples/
 test-sdist/
