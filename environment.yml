@@ -20,7 +20,8 @@ dependencies:
   - numba
   - scikit-learn
   - gurobi
-  - marimo
+  - marimo  # for tutorials
+  - randomcolor
   # rSpringRank.datasets dependency
   - pooch  
   # For testing and benchmarking

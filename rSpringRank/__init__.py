@@ -37,6 +37,9 @@ from rSpringRank.stats import *
 import rSpringRank.stats
 from rSpringRank.stats import *
 import rSpringRank.stats
+from rSpringRank.draw import *
+import rSpringRank.draw
+
 
 __package__ = "rSpringRank"
 __title__ = "rSpringRank: Regularized methods for efficient ranking in networks."
