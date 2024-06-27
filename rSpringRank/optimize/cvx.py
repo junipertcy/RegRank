@@ -23,19 +23,20 @@ from .losses import sum_squared_loss_conj, sum_squared_loss, huber_loss
 
 
 class same_mean_cvx(object):
-    def __init__(self, g, L):
+    def __init__(self, g, L, **kwargs):
         self.g = g
         self.L = L
 
         self.sslc = None
         self.ssl = None
+        self.goi = kwargs.get("goi", None)
         pass
 
     # these 2 below are for dual formulations
     def loss_fn(self, dual_v):
         if self.sslc is None:
             self.sslc = sum_squared_loss_conj()
-            self.sslc.setup(self.g, alpha=1)
+            self.sslc.setup(self.g, alpha=1, goi=self.goi)
         return self.sslc.evaluate_cvx(dual_v)
 
     def objective_fn(self, dual_v):
@@ -45,7 +46,7 @@ class same_mean_cvx(object):
     def loss_fn_primal(self, primal_s, alpha=1):
         if self.ssl is None:
             self.ssl = sum_squared_loss()
-            self.ssl.setup(self.g, alpha=1)
+            self.ssl.setup(self.g, alpha=1, goi=self.goi)
         return self.ssl.evaluate_cvx(primal_s)
 
     def regularizer(self, primal_s):

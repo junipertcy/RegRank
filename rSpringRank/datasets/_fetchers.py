@@ -47,7 +47,7 @@ def us_air_traffic():
     fname = Path(fname)
     dctx = zstd.ZstdDecompressor()
 
-    with tempfile.TemporaryDirectory(delete=True) as temp_dir:
+    with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir_path = Path(temp_dir)
         gt_fname = temp_dir_path / fname.with_suffix("").name
         with open(fname, "rb") as ifh, open(gt_fname, "wb") as ofh:

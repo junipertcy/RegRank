@@ -30,15 +30,15 @@ from rSpringRank.optimize.cvx import cp, same_mean_cvx
 def compute(goi):
     pde = PhDExchange()
     g = pde.get_data(goi=goi)
-    L = compute_ell(g)
-    sm_cvx = same_mean_cvx(g, L)
+    L = compute_ell(g, key="goi")
+    sm_cvx = same_mean_cvx(g, L, goi="goi")
 
     num_classes = len(set(np.array(list(g.vp["goi"]))))
     num_pairs_classes = comb(num_classes, 2)
 
     ### Our method; DUAL ###
     sslc = sum_squared_loss_conj()
-    sslc.setup(g, alpha=1)
+    sslc.setup(g, alpha=1, goi="goi")
 
     def f(x):
         return sslc.evaluate(x)
@@ -88,7 +88,7 @@ def compute(goi):
 
     ### CODE FOR BENCHMARKING ###
     ssl = sum_squared_loss()
-    ssl.setup(g, alpha=1)
+    ssl.setup(g, alpha=1, goi="goi")
 
     tau = 1
 

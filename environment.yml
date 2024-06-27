@@ -21,7 +21,7 @@ dependencies:
   - scikit-learn
   - gurobi
   - marimo  # for tutorials
-  - randomcolor
+  - distinctipy
   # rSpringRank.datasets dependency
   - pooch  
   # For testing and benchmarking

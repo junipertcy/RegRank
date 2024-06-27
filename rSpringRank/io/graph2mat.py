@@ -6,6 +6,8 @@ from scipy.sparse.linalg import inv
 from itertools import combinations
 from math import comb
 from collections import Counter
+from numba import njit, types
+from numba.typed import Dict
 
 
 def cast2sum_squares_form_t(
@@ -321,56 +323,54 @@ def filter_by_year(g, from_year=1946, to_year=2006, top_n=70):
     return gt.GraphView(g, efilt=cond, vfilt=lambda v: vcond(v))
 
 
-def compute_ell(g, key=None, sparse=True):
+def compute_ell(g, key=None):
     if (type(g) is not gt.Graph) and (type(g) is not gt.GraphView):
         raise TypeError("g should be of type `graph_tool.Graph`.")
+    if key is None:
+        return None
     try:
         ctr_classes = Counter(g.vp[key])
     except KeyError:
         raise AttributeError(
-            "Please provide a 'group of interest' for the vertex property, " +
-            "so we can compute the annotated rankings."
+            f"Key: {key} not found. Please provide a 'group of interest' for the vertex property, "
+            + "so we can compute the annotated rankings."
         )
+    _ctr_classes = dict(Counter({k: v**-1 for k, v in ctr_classes.items()}))
+    ctr_classes = Dict.empty(key_type=types.int64, value_type=types.float64)
+    for _k, value in _ctr_classes.items():
+        ctr_classes[hash(_k)] = value
     len_classes = len(ctr_classes)
-    comb_classes = combinations(ctr_classes, 2)
-    mb = list(g.vp[key])
+    comb_classes = np.array(list(combinations(ctr_classes, 2)), dtype=np.int64)
+    mb = np.array([hash(_) for _ in g.vp[key]], dtype=np.int64)
     dim_0 = comb(len_classes, 2)
     dim_1 = len(g.get_vertices())
+    row = np.zeros((len_classes - 1) * dim_1, dtype=np.int64)
+    col = np.zeros((len_classes - 1) * dim_1, dtype=np.int64)
+    data = np.zeros((len_classes - 1) * dim_1, dtype=np.float64)
+    counter = 0
 
-    if sparse:
-        row, col, data = [
-            np.zeros((len_classes - 1) * dim_1, dtype=np.float64) for _ in range(3)
-        ]
-        counter = 0
-    else:
-        ell = np.zeros([dim_0, dim_1], dtype=np.float64)
-    k = 0
-    for idx, (i, j) in enumerate(comb_classes):
-        k += 1
-        for _, vtx in enumerate(g.vertices()):
-            # sometimes we feed g as a gt.GraphView
-            # in this case, vtx will return the (unfiltered) vertex id
-            if mb[_] == i:
-                if sparse:
+    @njit
+    def _compute_ell(row, col, data, counter, n_nodes, ctr_classes):
+        for idx, (i, j) in enumerate(comb_classes):
+            for _ in range(n_nodes):
+                # sometimes we feed g as a gt.GraphView
+                # in this case, vtx will return the (unfiltered) vertex id
+                if mb[_] == i:
                     row[counter] = idx
                     col[counter] = _
-                    data[counter] = -ctr_classes[i] ** -1
+                    data[counter] = -ctr_classes[i]
                     counter += 1
-                else:
-                    ell[idx][_] = -ctr_classes[i] ** -1
-            elif mb[_] == j:
-                if sparse:
+                elif mb[_] == j:
                     row[counter] = idx
                     col[counter] = _
-                    data[counter] = ctr_classes[j] ** -1
+                    data[counter] = ctr_classes[j]
                     counter += 1
-                else:
-                    ell[idx][_] = ctr_classes[j] ** -1
 
-    if sparse:
-        ell = csc_matrix(
-            (data, (row, col)),
-            shape=(dim_0, dim_1),
-            dtype=np.float64,
-        )
+    _compute_ell(row, col, data, counter, dim_1, ctr_classes)
+
+    ell = csc_matrix(
+        (data, (row, col)),
+        shape=(dim_0, dim_1),
+        dtype=np.float64,
+    )
     return ell

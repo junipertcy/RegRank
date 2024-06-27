@@ -93,9 +93,10 @@ class sum_squared_loss(Loss):
     def evaluate_cvx(self, theta):
         return 0.5 * cp.norm(self.B @ theta - self.b) ** 2
 
-    def setup(self, data, alpha):
+    def setup(self, data, alpha, **kwargs):
+        goi = kwargs.get("goi", None)
         # data is graph_tool.Graph()
-        cache = compute_cache_from_data(data, alpha=alpha)
+        cache = compute_cache_from_data(data, alpha=alpha, goi=goi)
         self.B = cache["B"]
         self.b = cache["b"]
         self.ell = cache["ell"]
