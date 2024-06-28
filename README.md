@@ -1,4 +1,4 @@
-[![license](https://img.shields.io/badge/license-LGPL-green.svg?style=flat)](https://github.com/junipertcy/rSpringRank/blob/main/LICENSE) [![Pypi downloads](https://img.shields.io/pypi/dm/rSpringRank.svg?label=Pypi%20downloads)](https://pypi.org/project/rSpringRank/)
+[![license](https://img.shields.io/badge/license-LGPL-green.svg?style=flat)](https://github.com/junipertcy/rSpringRank/blob/main/LICENSE) [![PyPI version](https://img.shields.io/pypi/v/rSpringRank.svg)](https://pypi.org/project/rSpringRank/) [![PyPI downloads](https://img.shields.io/pypi/dm/rSpringRank.svg?label=Pypi%20downloads)](https://pypi.org/project/rSpringRank/) [![Build Status](https://github.com/junipertcy/rSpringRank/actions/workflows/release.yml/badge.svg)](https://github.com/junipertcy/rSpringRank/actions) [![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/ellerbrock/open-source-badges/)
 
 **rSpringRank** implements a collection of regularized, convex models (+solvers) that allow the inference of hierarchical structure in a directed network, which exists due to dominance, social status, or prestige. Specifically, this work leverages the time-varying structure and/or the node metadata present in the data set.
 
@@ -11,7 +11,13 @@ This is the software repository behind the paper:
 
 ## Installation
 
-**rSpringRank** is available on PyPI, so do `pip install rSpringRank`.
+**rSpringRank** is available on PyPI. It also depends on `graph-tool`. We recommend using `conda` to manage packages.
+
+```bash
+conda create --name rSpringRank-dev -c conda-forge graph-tool
+conda activate rSpringRank-dev
+pip install rSpringRank
+```
 
 ## Example
 

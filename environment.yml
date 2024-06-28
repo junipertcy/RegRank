@@ -5,42 +5,7 @@
 #
 name: rSpringRank-dev
 channels:
-  - defaults
   - conda-forge
-  - gurobi
 dependencies:
-  - ipykernel
   - graph-tool
-  - cvxpy
-  - scipy
-  - numpy
-  - numba
-  - scikit-learn
-  - gurobi
-  - marimo  # for tutorials
-  - distinctipy
-  - prettytable
-  # rSpringRank.datasets dependency
-  - pooch  
-  # For testing and benchmarking
-  - pytest
-  - scalene
-  # For building docs
-  - sphinx
-  - myst-parser
-  - intersphinx-registry
-  - numpydoc
-  - ipython
-  - setuptools<67.3  # avoid pkg_resources deprecation warnings from MPL/scikit-umfpack
-  - matplotlib
-  - sphinx-markdown-tables
-  - sphinx_rtd_theme==2.0.0
-  - recommonmark
-  - numpydoc
-  - mathjax
-  # For CLI
-  - click
-  # For linting
-  - ruff>=0.0.292
-  - restructuredtext_lint
-  - doc8
+
