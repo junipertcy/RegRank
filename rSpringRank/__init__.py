@@ -52,7 +52,7 @@ __author__ = """\n""".join(
     ]
 )
 __URL__ = "https://github.com/junipertcy/rSpringRank"
-__version__ = "0.8.0"
+__version__ = "0.2.23"
 __release__ = ""
 
 

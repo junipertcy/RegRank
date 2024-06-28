@@ -26,7 +26,10 @@
 import numpy as np
 from scipy.optimize import minimize_scalar, minimize
 from scipy.interpolate import interp1d
-import graph_tool.all as gt
+try:
+    import graph_tool.all as gt
+except ModuleNotFoundError:
+    print("graph_tool not found. Please install graph_tool.")
 from collections import defaultdict
 from sklearn.model_selection import KFold
 from numba import njit

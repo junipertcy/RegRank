@@ -18,19 +18,28 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from pymongo import MongoClient
+
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from itertools import combinations
-import graph_tool.all as gt
+
+try:
+    import graph_tool.all as gt
+except ModuleNotFoundError:
+    print("graph_tool not found. Please install graph_tool.")
 import numpy as np
 from math import comb
 
-username = "tzuchi"
-password = "FI4opd12cjazqPL"
-port = "127.0.0.1:27017"
+try:
+    from pymongo import MongoClient
 
-client = MongoClient("mongodb://%s:%s@%s" % (username, password, port))
+    username = "tzuchi"
+    password = "FI4opd12cjazqPL"
+    port = "127.0.0.1:27017"
+
+    client = MongoClient("mongodb://%s:%s@%s" % (username, password, port))
+except ModuleNotFoundError:
+    print("pymongo not found. Please install pymongo.")
 
 
 # TODO, see

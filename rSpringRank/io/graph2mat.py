@@ -1,5 +1,9 @@
 from scipy.sparse import csr_matrix, csc_matrix, find
-import graph_tool.all as gt
+try:
+    import graph_tool.all as gt
+except ModuleNotFoundError:
+    print("graph_tool not found. Please install graph_tool.")
+
 import numpy as np
 from scipy.linalg import sqrtm
 from scipy.sparse.linalg import inv

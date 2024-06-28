@@ -18,7 +18,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import graph_tool.all as gt
+try:
+    import graph_tool.all as gt
+except ModuleNotFoundError:
+    print("graph_tool not found. Please install graph_tool.")
 
 import numpy as np
 from scipy.sparse import spdiags, csr_matrix
