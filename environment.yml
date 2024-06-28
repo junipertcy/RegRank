@@ -12,9 +12,6 @@ dependencies:
   - ipykernel
   - graph-tool
   - cvxpy
-  - seaborn
-  - bson
-  - pymongo
   - scipy
   - numpy
   - numba
