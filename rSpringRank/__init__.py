@@ -52,11 +52,11 @@ __author__ = """\n""".join(
     ]
 )
 __URL__ = "https://github.com/junipertcy/rSpringRank"
-__version__ = "0.2.23"
+__version__ = "0.2.24"
 __release__ = ""
 
 
-submodules = ["datasets", "io", "optimize", "stats"]
+submodules = ["datasets", "io", "optimize", "stats", "draw"]
 dunder = [
     "__version__",
     "__package__",
