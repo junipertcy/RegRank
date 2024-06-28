@@ -3,6 +3,7 @@ profile.html
 profile.json
 
 # misc
+bin/  
 deploy.sh
 examples/
 test-sdist/

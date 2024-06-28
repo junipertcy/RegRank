@@ -30,16 +30,15 @@ jobs:
           channels: conda-forge
           allow-softlinks: true
           channel-priority: flexible
-          show-channel-urls: true
-          use-only-tar-bz2: true
 
       - name: Check conda environment
         run: |
-          conda activate rSpringRank-dev
           conda info
           conda list
+          conda env list
           conda config --show-sources
           conda config --show
+          conda install graph-tool -c conda-forge -y
 
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 -
