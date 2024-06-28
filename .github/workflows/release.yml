@@ -33,12 +33,13 @@ jobs:
 
       - name: Check conda environment
         run: |
-          conda info
-          conda list
           conda env list
+          conda info --envs
           conda config --show-sources
           conda config --show
           conda install graph-tool -c conda-forge -y
+          conda info
+          conda list
 
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 -

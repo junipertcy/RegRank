@@ -1,7 +1,11 @@
 from ._registry import registry, registry_urls
 
 # import networkx as nx
-import graph_tool.all as gt
+try:
+    import graph_tool.all as gt
+except ModuleNotFoundError:
+    print("We need graph-tool to load the datasets. Please install graph-tool.")
+
 import zstandard as zstd
 from pathlib import Path
 import tempfile
