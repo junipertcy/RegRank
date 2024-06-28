@@ -1,6 +1,14 @@
 import numpy as np
+from collections import defaultdict
 from sklearn.neighbors import NearestNeighbors
 import distinctipy
+
+
+def reverse_dict(input_dict):
+    reversed_dict = defaultdict(list)
+    for key, value in input_dict.items():
+        reversed_dict[value].append(key)
+    return dict(reversed_dict)
 
 
 def determine_optimal_epsilon(arr, min_samples=2):
@@ -26,7 +34,6 @@ def determine_optimal_epsilon(arr, min_samples=2):
     distances = np.sort(distances[:, 1], axis=0)
 
     # Find the point of maximum curvature (elbow)
-    # This is a simple heuristic; more sophisticated methods can be used
     diff = np.diff(distances)
     optimal_index = np.argmax(diff)
     optimal_epsilon = distances[optimal_index]
@@ -77,7 +84,19 @@ def cluster_1d_array(arr, min_samples=2):
     for idx in sorted_indices[len(sorted_arr) - len(current_cluster) :]:
         index_mapping[idx] = current_cluster_index
 
-    return clusters, index_mapping
+    # Sort clusters by their mean values in descending order
+    cluster_means = [np.mean(cluster) for cluster in clusters]
+    sorted_cluster_indices = np.argsort(cluster_means)[::-1]
+    sorted_clusters = [clusters[i] for i in sorted_cluster_indices]
+
+    # Update index_mapping according to the new cluster order
+    new_index_mapping = {}
+    for new_cluster_index, original_cluster_index in enumerate(sorted_cluster_indices):
+        for idx in index_mapping:
+            if index_mapping[idx] == original_cluster_index:
+                new_index_mapping[idx] = new_cluster_index
+
+    return sorted_clusters, new_index_mapping
 
 
 def rgb_to_hex(rgb_color):
@@ -99,7 +118,7 @@ def generate_complementary_colors(k):
     List[str]: List of hex color codes.
     """
     # Generate k visually distinct colors
-    colors = distinctipy.get_colors(k)
+    colors = distinctipy.get_colors(k, pastel_factor=0.9)
 
     # Convert the RGB tuples to hex color codes
     hex_colors = [rgb_to_hex(color) for color in colors]

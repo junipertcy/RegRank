@@ -135,9 +135,9 @@ def test_stabbr():
     print("CVX dual: ", cvx_dual)
     print("CVX primal: ", cvx_prim)
     print("### end:: stabbr ###")
-    assert np.isclose(our_dual, cvx_dual, atol=5e-1)  # TODO: Why is this so high?
-    assert np.isclose(our_dual, cvx_prim, atol=5e-1)
-    assert np.isclose(cvx_dual, cvx_prim, atol=5e-1)
+    assert np.isclose(our_dual, cvx_dual, atol=1e-3)
+    assert np.isclose(our_dual, cvx_prim, atol=1e-3)
+    assert np.isclose(cvx_dual, cvx_prim, atol=1e-3)
 
 
 if __name__ == "__main__":

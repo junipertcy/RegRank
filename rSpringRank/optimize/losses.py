@@ -163,7 +163,7 @@ class sum_squared_loss_conj(Loss):
         term_1 = (
             0.5 * cp.norm(-self.Bt_B_invSqrt_ellt @ theta + self.Bt_B_invSqrt_Btb) ** 2
         )
-        term_2 = -0.5 * cp.norm(self.b.toarray()) ** 2
+        term_2 = -0.5 * cp.norm(self.b.toarray(order="C")) ** 2
         return term_1 + term_2
 
     def setup(self, data, alpha, **kwargs):
@@ -192,19 +192,22 @@ class sum_squared_loss_conj(Loss):
         self.B = cache["B"]  # sparse
         self.b = cache["b"]  # sparse
         self.ell = cache["ell"]  # sparse
-        self.Bt_B_inv = cache["Bt_B_inv"]  # 'numpy.ndarray'
+        self.Bt_B_inv = cache["Bt_B_inv"]  # sparse
         self.Bt_B_invSqrt = cache["Bt_B_invSqrt"]  # 'numpy.ndarray'
-
         # process sparse@sparse first, then dense@sparse would be faster
         # And, explicit parentheses would be faster
-        self.Bt_B_invSqrt_Btb = self.Bt_B_invSqrt @ (self.B.T @ self.b)
-        self.Bt_B_invSqrt_ellt = self.Bt_B_invSqrt @ self.ell.T
-        self.Bt_B_invSqrt_ellt = np.ascontiguousarray(self.Bt_B_invSqrt_ellt).astype(np.float64)
-        self.ell_BtB_inv_Bt_b = (
-            self.ell @ (self.Bt_B_inv @ (self.B.T @ self.b))
-        ).toarray()
-        self.ell_BtB_inb_ellt = (self.ell @ (self.Bt_B_inv @ -self.ell.T)).toarray()
-        self.term_2 = (-0.5 * norm(self.b.toarray()) ** 2).astype(np.float64)
+        Bt_b = self.B.T @ self.b
+        self.Bt_B_invSqrt_Btb = self.Bt_B_invSqrt @ Bt_b
+        self.Bt_B_invSqrt_ellt = self.Bt_B_invSqrt @ self.ell.T  # F-order
+
+        ell_Bt_B_inv = self.ell @ self.Bt_B_inv
+        self.ell_BtB_inv_Bt_b = (ell_Bt_B_inv @ Bt_b).toarray(
+            order="C"
+        )  # toarray because _prox() needs it
+        self.ell_BtB_inb_ellt = (ell_Bt_B_inv @ -self.ell.T).toarray(
+            order="C"
+        )  # toarray because _prox() needs it
+        self.term_2 = (-0.5 * norm(self.b.toarray(order="C")) ** 2).astype(np.float64)
 
     @staticmethod
     @njit(cache=True)
@@ -213,11 +216,10 @@ class sum_squared_loss_conj(Loss):
 
     def prox(self, theta):  # relatively expensive
         return self._prox(-self.ell_BtB_inb_ellt, theta, -self.ell_BtB_inv_Bt_b)
-        # return -self.ell_BtB_inb_ellt @ theta - self.ell_BtB_inv_Bt_b
 
     def dual2primal(self, v):
         d = self.Bt_B_inv @ (-self.ell.T @ v + self.B.T @ self.b)
-        return np.array(np.squeeze(d), dtype=np.float64).reshape(-1, 1)
+        return np.array(np.squeeze(d), dtype=np.float64, order="C").reshape(-1, 1)
 
     def predict(self):
         pass

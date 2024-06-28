@@ -239,7 +239,7 @@ class rSpringRank(object):
                 self.result["primal"] = SpringRank(alpha=self.alpha).fit(data)["rank"]
             else:
                 B, b = cast2sum_squares_form(data, alpha=self.alpha)
-                b_array = b.toarray()
+                b_array = b.toarray(order="C")
                 _lsmr = lsmr(B, b_array)[:1][0]
                 self.result["primal"] = _lsmr.reshape(
                     -1, 1
@@ -409,7 +409,7 @@ class rSpringRank(object):
                     to_year=to_year,
                     top_n=top_n,
                 )
-                primal_time = lsqr(B, b.toarray())[:1][0]
+                primal_time = lsqr(B, b.toarray(order="C"))[:1][0]
                 self.result["timewise"] = primal_time.reshape(-1, top_n)
 
         elif self.method == "huber":

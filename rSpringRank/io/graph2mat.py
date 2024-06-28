@@ -183,11 +183,16 @@ def cast2sum_squares_form(data, alpha, regularization=True):  # TODO: this is sl
     num_nonzero = A_nonzero[0].shape[0]
     if regularization:
         row, col, data = [
-            np.zeros(num_nonzero * 2 + shape, dtype=np.float64) for _ in range(3)
+            np.zeros(num_nonzero * 2 + shape, dtype=np.float64, order="C")
+            for _ in range(3)
         ]
     else:
-        row, col, data = [np.zeros(num_nonzero * 2, dtype=np.float64) for _ in range(3)]
-    row_b, col_b, data_b = [np.zeros(num_nonzero, dtype=np.float64) for _ in range(3)]
+        row, col, data = [
+            np.zeros(num_nonzero * 2, dtype=np.float64, order="C") for _ in range(3)
+        ]
+    row_b, col_b, data_b = [
+        np.zeros(num_nonzero, dtype=np.float64, order="C") for _ in range(3)
+    ]
     counter_B = counter_b = 0
     # data_iter = iter(A.data)
     for ind in zip(*find(A)):
@@ -250,7 +255,7 @@ def compute_cache_from_data_t(
         separate=True,
     )
     Bt_B_inv = compute_Bt_B_inv(B)
-    Bt_B_invSqrt = sqrtm(Bt_B_inv.toarray())
+    Bt_B_invSqrt = sqrtm(Bt_B_inv.toarray(order="C"))
 
     return {
         "B": B,
@@ -281,7 +286,7 @@ def compute_cache_from_data(data, alpha, regularization=True, **kwargs):
     B, b = cast2sum_squares_form(data, alpha, regularization=regularization)
     _ell = compute_ell(data, key=goi)
     Bt_B_inv = compute_Bt_B_inv(B)
-    Bt_B_invSqrt = sqrtm(Bt_B_inv.toarray())
+    Bt_B_invSqrt = sqrtm(Bt_B_inv.toarray(order="C"))  # C-order
 
     return {
         "B": B,  # in csc_matrix format and also is sparse
@@ -340,14 +345,22 @@ def compute_ell(g, key=None):
     for _k, value in _ctr_classes.items():
         ctr_classes[hash(_k)] = value
     len_classes = len(ctr_classes)
-    comb_classes = np.array(list(combinations(ctr_classes, 2)), dtype=np.int64)
-    mb = np.array([hash(_) for _ in g.vp[key]], dtype=np.int64)
+    comb_classes = np.array(
+        list(combinations(ctr_classes, 2)), dtype=np.int64, order="C"
+    )
+    mb = np.array([hash(_) for _ in g.vp[key]], dtype=np.int64, order="C")
     dim_0 = comb(len_classes, 2)
     dim_1 = len(g.get_vertices())
-    row = np.zeros((len_classes - 1) * dim_1, dtype=np.int64)
-    col = np.zeros((len_classes - 1) * dim_1, dtype=np.int64)
-    data = np.zeros((len_classes - 1) * dim_1, dtype=np.float64)
+    row = np.zeros((len_classes - 1) * dim_1, dtype=np.int64, order="C")
+    col = np.zeros((len_classes - 1) * dim_1, dtype=np.int64, order="C")
+    data = np.zeros((len_classes - 1) * dim_1, dtype=np.float64, order="C")
     counter = 0
+    if dim_0 >= 185360:
+        raise ValueError(
+            "We currently do not support this many metatdata. "
+            + "(You many need more than 256 GB on-board memory for this.) "
+            + "Please choose a smaller GOI to analyze."
+        )
 
     @njit
     def _compute_ell(row, col, data, counter, n_nodes, ctr_classes):
