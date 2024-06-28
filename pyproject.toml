@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "rSpringRank"
-version = "0.2.7"
+version = "0.2.8"
 authors = ["Tzu-Chi Yen <tzuchi.yen@colorado.edu>"]
 license = "LGPL-3.0-or-later"
 readme = "README.md"
@@ -35,12 +35,10 @@ classifiers = [
     'Topic :: Scientific/Engineering',
     'Topic :: Software Development :: Libraries',
 ]
-packages = [
-    { include = "rSpringRank" }
-]
+packages = [{ include = "rSpringRank" }]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "!=3.11.0,>=3.10"
 cvxpy = "^1.5.2"
 scipy = ">=1.10.0,<2.0.0"
 numpy = "1.26.4"
@@ -63,4 +61,3 @@ sphinx-markdown-tables = "^0.0.17"
 recommonmark = "^0.7.1"
 mathjax = "^0.1.2"
 scalene = "^1.5.42"
-

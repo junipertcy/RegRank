@@ -14,11 +14,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.1.7
 
-      - name: Set up Python
-        uses: actions/setup-python@v5.1.0
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3.0.4
         with:
-          python-version: "3.10"
-
+          python-version: 3.10
+          environment-file: environment.yml
+          auto-update-conda: true
+          auto-activate-base: false
+      - name: Install dependencies
+        run: conda env update --file environment.yml
+  
+      - name: Activate environment
+        run: source activate rSpringRank-dev
+      
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 -
 
@@ -33,7 +41,7 @@ jobs:
           mkdir -p test-sdist
           cd test-sdist
           python -m venv venv-sdist
-          venv-sdist/bin/python -m pip install ../dist/rSpringRank-*.tar.gz
+          venv-sdist/bin/python -m pip install ../dist/rspringrank-*.tar.gz
           venv-sdist/bin/python -c "import rSpringRank"
 
       - name: Check wheel install and imports
@@ -41,7 +49,7 @@ jobs:
           mkdir -p test-wheel
           cd test-wheel
           python -m venv venv-wheel
-          venv-wheel/bin/python -m pip install ../dist/rSpringRank-*.whl
+          venv-wheel/bin/python -m pip install ../dist/rspringrank-*.whl
           venv-wheel/bin/python -c "import rSpringRank"
 
       - name: Publish to PyPI
