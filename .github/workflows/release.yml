@@ -5,6 +5,9 @@ on:
     types:
       - created
 
+permissions:
+  contents: read
+
 jobs:
   release-job:
     name: Build and publish on PyPI (${{ matrix.python-version }}, ${{ matrix.os }})
@@ -14,6 +17,8 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "macos-latest"]
         python-version: ["3.10", "3.11"]
+    permissions:
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.7

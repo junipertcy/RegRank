@@ -48,8 +48,8 @@ __author__ = """\n""".join(
     ]
 )
 __URL__ = "https://github.com/junipertcy/rSpringRank"
-__version__ = "0.2.27"
-__release__ = "0.2.27"
+__version__ = "0.2.28"
+__release__ = "0.2.28"
 
 submodules = ["datasets", "io", "optimize", "stats", "draw"]
 dunder = [
