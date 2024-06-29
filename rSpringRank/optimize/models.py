@@ -23,22 +23,21 @@ try:
 except ModuleNotFoundError:
     print("graph_tool not found. Please install graph_tool.")
 
-import numpy as np
-from scipy.sparse import spdiags, csr_matrix
-from scipy.optimize import brentq
-import scipy.sparse.linalg
-from scipy.sparse import SparseEfficiencyWarning
-from .regularizers import zero_reg
-from scipy.sparse.linalg import lsqr, lsmr
+import warnings
 
+import cvxpy as cp
+import numpy as np
+import scipy.sparse.linalg
+from numpy.linalg import norm
+from scipy.optimize import brentq
+from scipy.sparse import SparseEfficiencyWarning, csr_matrix, spdiags
+from scipy.sparse.linalg import lsmr, lsqr
+
+from ..io import cast2sum_squares_form, cast2sum_squares_form_t
+from .cvx import huber_cvx, vanilla_cvx
 from .firstOrderMethods import gradientDescent
 from .losses import sum_squared_loss_conj
-from .regularizers import same_mean_reg
-from .cvx import vanilla_cvx, huber_cvx
-from ..io import cast2sum_squares_form_t, cast2sum_squares_form
-from numpy.linalg import norm
-import cvxpy as cp
-import warnings
+from .regularizers import same_mean_reg, zero_reg
 
 warnings.simplefilter("ignore", SparseEfficiencyWarning)
 
@@ -222,7 +221,7 @@ class rSpringRank(object):
         self.bicgstab = kwargs.get("bicgstab", True)
         if np.sum([self.cvxpy, self.bicgstab]) > 1:
             raise ValueError("Only one of cvxpy and bicgstab can be True.")
-        
+
         if self.method == "vanilla":
             if self.cvxpy:
                 v_cvx = vanilla_cvx(data, alpha=self.alpha)
@@ -244,17 +243,13 @@ class rSpringRank(object):
                 B, b = cast2sum_squares_form(data, alpha=self.alpha)
                 b_array = b.toarray(order="C")
                 _lsmr = lsmr(B, b_array)[:1][0]
-                self.result["primal"] = _lsmr.reshape(
-                    -1, 1
-                )
+                self.result["primal"] = _lsmr.reshape(-1, 1)
 
                 # compute primal functional value
                 def f_all_primal(x):
                     return 0.5 * norm(B @ x - b_array) ** 2
 
-                self.result["f_primal"] = f_all_primal(
-                    self.result["primal"]
-                )
+                self.result["f_primal"] = f_all_primal(self.result["primal"])
 
         elif self.method == "annotated":
             # In this case, we use the dual-based proximal gradient descent algorithm

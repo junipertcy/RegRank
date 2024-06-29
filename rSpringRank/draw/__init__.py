@@ -1,12 +1,15 @@
 __all__ = ["compute_summary", "plot_hist", "print_summary_table"]
 
-import matplotlib.pyplot as plt
-from collections import defaultdict
-import numpy as np
 import random
-from prettytable import PrettyTable
 import textwrap
-from .utils import cluster_1d_array, generate_complementary_colors, reverse_dict
+from collections import defaultdict
+
+import matplotlib.pyplot as plt
+import numpy as np
+from prettytable import PrettyTable
+
+from .utils import (cluster_1d_array, generate_complementary_colors,
+                    reverse_dict)
 
 
 def compute_summary(g, goi, sslc=None, dual_v=None, primal_s=None):

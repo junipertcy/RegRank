@@ -1,8 +1,8 @@
-from rSpringRank.stats.experiments import SmallGraph, RandomGraph
+import numpy as np
 
 from rSpringRank.optimize.cvx import cp, vanilla_cvx
 from rSpringRank.optimize.models import SpringRank
-import numpy as np
+from rSpringRank.stats.experiments import RandomGraph, SmallGraph
 
 
 def compute(obj, alpha):
@@ -15,9 +15,7 @@ def compute(obj, alpha):
     )  # for vanilla
     problem.solve(verbose=False)
 
-    v_cvx_output = primal_s.value.reshape(
-        -1, 1
-    )
+    v_cvx_output = primal_s.value.reshape(-1, 1)
 
     sr = SpringRank(alpha=alpha)
 

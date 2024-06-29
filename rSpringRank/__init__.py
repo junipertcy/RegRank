@@ -21,25 +21,21 @@
 import importlib as _importlib
 import os
 
-__version__ = "0.0.1"
 
 import warnings
 
-from rSpringRank import *
 import rSpringRank
-from rSpringRank.datasets import *
 import rSpringRank.datasets
-from rSpringRank.io import *
-import rSpringRank.io
-from rSpringRank.optimize import *
-import rSpringRank.optimize
-from rSpringRank.stats import *
-import rSpringRank.stats
-from rSpringRank.stats import *
-import rSpringRank.stats
-from rSpringRank.draw import *
 import rSpringRank.draw
-
+import rSpringRank.io
+import rSpringRank.optimize
+import rSpringRank.stats
+from rSpringRank import *
+from rSpringRank.datasets import *
+from rSpringRank.draw import *
+from rSpringRank.io import *
+from rSpringRank.optimize import *
+from rSpringRank.stats import *
 
 __package__ = "rSpringRank"
 __title__ = "rSpringRank: Regularized methods for efficient ranking in networks."
@@ -52,9 +48,8 @@ __author__ = """\n""".join(
     ]
 )
 __URL__ = "https://github.com/junipertcy/rSpringRank"
-__version__ = "0.2.26"
-__release__ = "0.2.26"
-
+__version__ = "0.2.27"
+__release__ = "0.2.27"
 
 submodules = ["datasets", "io", "optimize", "stats", "draw"]
 dunder = [
@@ -67,10 +62,13 @@ dunder = [
     "__license__",
     "__release__",
 ]
-__all__ = submodules + [
-    "show_config",
-] + dunder
-
+__all__ = (
+    submodules
+    + [
+        "show_config",
+    ]
+    + dunder
+)
 
 
 def __dir__():

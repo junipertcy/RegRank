@@ -1,7 +1,3 @@
-from ._fetchers import (
-    us_air_traffic,
-    at_migrations,
-    PhD_exchange
-)
+from ._fetchers import PhD_exchange, at_migrations, us_air_traffic
 
-__all__ = ['us_air_traffic', 'PhD_exchange', 'at_migrations']
+__all__ = ["us_air_traffic", "PhD_exchange", "at_migrations"]

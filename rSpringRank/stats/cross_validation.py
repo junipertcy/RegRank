@@ -24,19 +24,19 @@
 # https://github.com/cdebacco/SpringRank/blob/master/matlab/crossValidation.m
 
 import numpy as np
-from scipy.optimize import minimize_scalar, minimize
 from scipy.interpolate import interp1d
+from scipy.optimize import minimize, minimize_scalar
+
 try:
     import graph_tool.all as gt
 except ModuleNotFoundError:
     print("graph_tool not found. Please install graph_tool.")
+import warnings
 from collections import defaultdict
-from sklearn.model_selection import KFold
+
 from numba import njit
 from scipy.interpolate import RegularGridInterpolator
-
-
-import warnings
+from sklearn.model_selection import KFold
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -95,7 +95,7 @@ def compute_accuracy(A, s, beta_local, beta_global):
 # def compute_rum_accuracy(A, s):
 #     g = gt.Graph()
 #     g.add_edge_list(A)
-    
+
 #     m = np.sum(A)
 #     n = len(s)
 #     y_local = 0
@@ -106,7 +106,7 @@ def compute_accuracy(A, s, beta_local, beta_global):
 #                 continue
 #             if A[i, j] == 0 and A[j, i] == 0:
 #                 continue
-#             if A[i, j] 
+#             if A[i, j]
 #             d = s[i] - s[j]
 #             p_local = (1 + np.exp(-2 * beta_local * d)) ** (-1)
 #             p_global = (1 + np.exp(-2 * beta_global * d)) ** (-1)

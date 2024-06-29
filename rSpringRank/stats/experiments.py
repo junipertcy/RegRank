@@ -19,16 +19,18 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import matplotlib.pyplot as plt
 from collections import defaultdict
 from itertools import combinations
+
+import matplotlib.pyplot as plt
 
 try:
     import graph_tool.all as gt
 except ModuleNotFoundError:
     print("graph_tool not found. Please install graph_tool.")
-import numpy as np
 from math import comb
+
+import numpy as np
 
 try:
     from pymongo import MongoClient

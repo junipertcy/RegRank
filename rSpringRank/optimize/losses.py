@@ -18,15 +18,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import numpy as np
-from numpy.linalg import norm
-from numba import njit
 import cvxpy as cp
-from ..io import (
-    compute_cache_from_data,
-    cast2sum_squares_form,
-    compute_cache_from_data_t,
-)
+import numpy as np
+from numba import njit
+from numpy.linalg import norm
+
+from ..io import (cast2sum_squares_form, compute_cache_from_data,
+                  compute_cache_from_data_t)
 
 
 class Loss:

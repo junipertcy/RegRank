@@ -651,4 +651,3 @@ def gradientDescent(
 
     data = book.finalize(xNew, k, stepsize=t)
     return xNew, data
-

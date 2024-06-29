@@ -13,10 +13,9 @@
     :license: BSD, see LICENSE for details.
 """
 
-from six import iteritems
-from docutils import nodes, utils
-
 import sphinx
+from docutils import nodes, utils
+from six import iteritems
 from sphinx.util.nodes import split_explicit_title
 
 
@@ -41,6 +40,7 @@ def make_link_role(base_urls, prefixes):
         if len(base_urls) > 1:
             pnodes.append(nodes.Text("]"))
         return pnodes, []
+
     return role
 
 
@@ -50,7 +50,6 @@ def setup_link_roles(app):
 
 
 def setup(app):
-    app.add_config_value('extlinks_fancy', {}, 'env')
-    app.connect('builder-inited', setup_link_roles)
-    return {'version': sphinx.__display_version__, 'parallel_read_safe': True}
-
+    app.add_config_value("extlinks_fancy", {}, "env")
+    app.connect("builder-inited", setup_link_roles)
+    return {"version": sphinx.__display_version__, "parallel_read_safe": True}

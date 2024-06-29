@@ -19,7 +19,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import cvxpy as cp
-from .losses import sum_squared_loss_conj, sum_squared_loss, huber_loss
+
+from .losses import huber_loss, sum_squared_loss, sum_squared_loss_conj
 
 
 class same_mean_cvx(object):

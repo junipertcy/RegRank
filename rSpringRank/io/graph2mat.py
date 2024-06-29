@@ -1,17 +1,19 @@
-from scipy.sparse import csr_matrix, csc_matrix, find
+from scipy.sparse import csc_matrix, csr_matrix, find
+
 try:
     import graph_tool.all as gt
 except ModuleNotFoundError:
     print("graph_tool not found. Please install graph_tool.")
 
-import numpy as np
-from scipy.linalg import sqrtm
-from scipy.sparse.linalg import inv
+from collections import Counter
 from itertools import combinations
 from math import comb
-from collections import Counter
+
+import numpy as np
 from numba import njit, types
 from numba.typed import Dict
+from scipy.linalg import sqrtm
+from scipy.sparse.linalg import inv
 
 
 def cast2sum_squares_form_t(

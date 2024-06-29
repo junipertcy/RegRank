@@ -1,8 +1,9 @@
+from logging import getLogger
+from random import sample
+
 import numpy as np
 from numba import jit
 from scipy.sparse import csr_matrix
-from random import sample
-from logging import getLogger
 
 logger = getLogger(__name__)
 # from numpy.random import default_rng

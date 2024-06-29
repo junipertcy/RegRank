@@ -24,10 +24,16 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 -
+        run: curl -sSL https://install.python-poetry.org | python - -y
+
+      - name: Update PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Update Poetry configuration
+        run: poetry config virtualenvs.create false
 
       - name: Install dependencies
-        run: poetry install --no-root
+        run: poetry install --sync --no-interaction
 
       - name: Build package
         run: poetry build
@@ -48,9 +54,12 @@ jobs:
           venv-wheel/bin/python -m pip install ../dist/rspringrank-*.whl
           venv-wheel/bin/python -c "import rSpringRank"
 
-      - name: Publish to PyPI
-        env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
-        run: |
-          poetry config pypi-token.pypi $POETRY_PYPI_TOKEN_PYPI --local
-          poetry publish --build
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.9.0
+
+      # - name: Publish to PyPI
+      #   env:
+      #     POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
+      #   run: |
+      #     poetry config pypi-token.pypi $POETRY_PYPI_TOKEN_PYPI --local
+      #     poetry publish --build

@@ -1,7 +1,8 @@
-import numpy as np
 from collections import defaultdict
-from sklearn.neighbors import NearestNeighbors
+
 import distinctipy
+import numpy as np
+from sklearn.neighbors import NearestNeighbors
 
 
 def reverse_dict(input_dict):
