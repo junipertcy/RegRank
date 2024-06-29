@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath(".."))
 
 # -- Project information -----------------------------------------------------
 
-project = "junipertcy/rSpringRank"
+project = "junipertcy/regrank"
 copyright = "2023-2024, Tzu-Chi Yen <tzuchi.yen@colorado.edu>"
 author = "Tzu-Chi Yen <tzuchi.yen@colorado.edu>"
 
@@ -99,12 +99,12 @@ html_theme_options = {
     "includehidden": True,
     "titles_only": False,
 }
-html_logo = "assets/rSpringRank-logo.png"
-html_favicon = "assets/rSpringRank-favicon.png"
+html_logo = "assets/regrank-logo.png"
+html_favicon = "assets/regrank-favicon.png"
 html_context = {
     "display_github": True,
     "github_user": "junipertcy",
-    "github_repo": "rSpringRank",
+    "github_repo": "regrank",
     "github_version": "main/docs/",
 }
 
@@ -128,7 +128,7 @@ html_static_path = ["_static"]
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "rSpringRank"
+htmlhelp_basename = "regrank"
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
@@ -170,8 +170,8 @@ latex_elements: Dict[str, str] = {
 latex_documents = [
     (
         master_doc,
-        "rSpringRank.tex",
-        "rSpringRank Documentation",
+        "regrank.tex",
+        "regrank Documentation",
         "Tzu-Chi Yen",
         "manual",
     ),
@@ -182,7 +182,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "rSpringRank", "rSpringRank Documentation", [author], 1)]
+man_pages = [(master_doc, "regrank", "regrank Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------------
@@ -193,10 +193,10 @@ man_pages = [(master_doc, "rSpringRank", "rSpringRank Documentation", [author], 
 texinfo_documents = [
     (
         master_doc,
-        "rSpringRank",
-        "rSpringRank Documentation",
+        "regrank",
+        "regrank Documentation",
         author,
-        "rSpringRank",
+        "regrank",
         "One line description of project.",
         "Miscellaneous",
     ),

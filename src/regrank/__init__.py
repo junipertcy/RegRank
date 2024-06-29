@@ -21,20 +21,20 @@ import importlib as _importlib
 import os
 import warnings
 
-import rSpringRank
-import rSpringRank.datasets
-import rSpringRank.draw
-import rSpringRank.io
-import rSpringRank.optimize
-import rSpringRank.stats
-from rSpringRank import *
-from rSpringRank.datasets import *
-from rSpringRank.draw import *
-from rSpringRank.io import *
-from rSpringRank.stats import *
+import regrank
+import regrank.datasets
+import regrank.draw
+import regrank.io
+import regrank.optimize
+import regrank.stats
+from regrank import *
+from regrank.datasets import *
+from regrank.draw import *
+from regrank.io import *
+from regrank.stats import *
 
-__package__ = "rSpringRank"
-__title__ = "rSpringRank: Regularized methods for efficient ranking in networks."
+__package__ = "regrank"
+__title__ = "regrank: Regularized methods for efficient ranking in networks."
 __description__ = ""
 __copyright__ = "Copyright (C) 2023 Tzu-Chi Yen"
 __license__ = "LGPL version 3 or above"
@@ -43,7 +43,7 @@ __author__ = """\n""".join(
         "Tzu-Chi Yen <tzuchi.yen@colorado.edu>",
     ]
 )
-__URL__ = "https://github.com/junipertcy/rSpringRank"
+__URL__ = "https://github.com/junipertcy/regrank"
 __version__ = "0.2.28"
 __release__ = "0.2.28"
 
@@ -73,14 +73,14 @@ def __dir__():
 
 def __getattr__(name):
     if name in submodules:
-        return _importlib.import_module(f"rSpringRank.{name}")
+        return _importlib.import_module(f"regrank.{name}")
     else:
         try:
             return globals()[name]
         except KeyError:
-            raise AttributeError(f"Module 'rSpringRank' has no attribute '{name}'")
+            raise AttributeError(f"Module 'regrank' has no attribute '{name}'")
 
 
 def show_config():
-    """Show ``rSpringRank`` build configuration."""
+    """Show ``regrank`` build configuration."""
     print("uname:", " ".join(os.uname()))

@@ -1,5 +1,5 @@
 """
-``rSpringRank.stats``
+``regrank.stats``
 ---------------------
 
 This module contains miscellaneous statistical functions.

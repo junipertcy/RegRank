@@ -1,9 +1,9 @@
 # Please refer to https://scipy.github.io/devdocs/building/index.html
 # To use:
 #   $ conda env create -f environment.yml  # `mamba` works too for this command
-#   $ conda activate rSpringRank-dev
+#   $ conda activate regrank-dev
 #
-name: rSpringRank-dev
+name: regrank-dev
 channels:
   - defaults
   - conda-forge
@@ -22,8 +22,8 @@ dependencies:
   - gurobi
   - marimo  # for tutorials
   - distinctipy
-  # rSpringRank.datasets dependency
-  - pooch  
+  # regrank.datasets dependency
+  - pooch
   # For testing and benchmarking
   - pytest
   - scalene

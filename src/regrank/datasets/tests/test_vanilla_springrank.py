@@ -1,13 +1,12 @@
 import numpy as np
 
-from rSpringRank.optimize.cvx import cp, vanilla_cvx
-from rSpringRank.optimize.models import SpringRank
-from rSpringRank.stats.experiments import RandomGraph, SmallGraph
+import regrank as rr
+from regrank.optimize.cvx import cp, vanilla_cvx
+from regrank.optimize.models import SpringRank
 
 
-def compute(obj, alpha):
+def compute(g, alpha):
     # sg = SmallGraph()
-    g = obj.get_data()
     v_cvx = vanilla_cvx(g, alpha=alpha)
     primal_s = cp.Variable((g.num_vertices(), 1))
     problem = cp.Problem(
@@ -26,7 +25,7 @@ def compute(obj, alpha):
 
 def test_small_graph():
     alpha = np.random.rand()
-    v_cvx_output, bicgstab_output = compute(SmallGraph(), alpha)
+    v_cvx_output, bicgstab_output = compute(rr.small_graph(), alpha)
     print(v_cvx_output, bicgstab_output)
     assert np.isclose(v_cvx_output, bicgstab_output, atol=1e-3).all()
 
@@ -34,5 +33,5 @@ def test_small_graph():
 def test_random_graph_10_times():
     for _ in range(10):
         alpha = np.random.rand()
-        v_cvx_output, bicgstab_output = compute(RandomGraph(), alpha)
+        v_cvx_output, bicgstab_output = compute(rr.random_graph(), alpha)
         assert np.isclose(v_cvx_output, bicgstab_output, atol=1e-3).all()

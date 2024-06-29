@@ -8,8 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from prettytable import PrettyTable
 
-from .utils import (cluster_1d_array, generate_complementary_colors,
-                    reverse_dict)
+from .utils import cluster_1d_array, generate_complementary_colors, reverse_dict
 
 
 def compute_summary(g, goi, sslc=None, dual_v=None, primal_s=None):

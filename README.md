@@ -1,49 +1,49 @@
-[![license](https://img.shields.io/badge/license-LGPL-green.svg?style=flat)](https://github.com/junipertcy/rSpringRank/blob/main/LICENSE) [![PyPI version](https://img.shields.io/pypi/v/rSpringRank.svg)](https://pypi.org/project/rSpringRank/) [![PyPI downloads](https://img.shields.io/pypi/dm/rSpringRank.svg?label=Pypi%20downloads)](https://pypi.org/project/rSpringRank/) [![Build Status](https://github.com/junipertcy/rSpringRank/actions/workflows/release.yml/badge.svg)](https://github.com/junipertcy/rSpringRank/actions) [![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/ellerbrock/open-source-badges/)
+[![license](https://img.shields.io/badge/license-LGPL-green.svg?style=flat)](https://github.com/junipertcy/regrank/blob/main/LICENSE) [![PyPI version](https://img.shields.io/pypi/v/regrank.svg)](https://pypi.org/project/regrank/) [![PyPI downloads](https://img.shields.io/pypi/dm/regrank.svg?label=Pypi%20downloads)](https://pypi.org/project/regrank/) [![Build Status](https://github.com/junipertcy/regrank/actions/workflows/release.yml/badge.svg)](https://github.com/junipertcy/regrank/actions) [![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/ellerbrock/open-source-badges/)
 
-**rSpringRank** implements a collection of regularized, convex models (+solvers) that allow the inference of hierarchical structure in a directed network, which exists due to dominance, social status, or prestige. Specifically, this work leverages the time-varying structure and/or the node metadata present in the data set.
+**regrank** implements a collection of regularized, convex models (+solvers) that allow the inference of hierarchical structure in a directed network, which exists due to dominance, social status, or prestige. Specifically, this work leverages the time-varying structure and/or the node metadata present in the data set.
 
 This is the software repository behind the paper:
 
 * Tzu-Chi Yen and Stephen Becker, *Regularized methods for efficient ranking in networks*, in preparation.
-* For full documentation, please visit [this site](https://docs.netscied.tw/rSpringRank/index.html).
-* General Q&A, ideas, or other things, please visit [Discussions](https://github.com/junipertcy/rSpringRank/discussions).
-* Software-related bugs, issues, or suggestions, please use [Issues](https://github.com/junipertcy/rSpringRank/issues).
+* For full documentation, please visit [this site](https://docs.netscied.tw/regrank/index.html).
+* General Q&A, ideas, or other things, please visit [Discussions](https://github.com/junipertcy/regrank/discussions).
+* Software-related bugs, issues, or suggestions, please use [Issues](https://github.com/junipertcy/regrank/issues).
 
 ## Installation
 
-**rSpringRank** is available on PyPI. It also depends on `graph-tool`. We recommend using `conda` to manage packages.
+**regrank** is available on PyPI. It also depends on `graph-tool`. We recommend using `conda` to manage packages.
 
 ```bash
-conda create --name rSpringRank-dev -c conda-forge graph-tool
-conda activate rSpringRank-dev
-pip install rSpringRank
+conda create --name regrank-dev -c conda-forge graph-tool
+conda activate regrank-dev
+pip install regrank
 ```
 
 ## Example
 
 ```python
 # Import the library
-import rSpringRank as sr
+import regrank as rr
 
 # Load a data set
-g = sr.datasets.us_air_traffic()
+g = rr.datasets.us_air_traffic()
 
 # Create a model
-model = sr.optimize.rSpringRank(method="annotated")
+model = rr.optimize.regrank(method="annotated")
 
 # Fit the model: We decided to analyze the `state_abr` nodal metadata,
 # We may inspect `g.list_properties()` for other metadata to analyze.
 result = model.fit(g, alpha=1, lambd=0.5, goi="state_abr")
 
 # Now, result["primal"] should have the rankings. We can compute a summary.
-summary = sr.compute_summary(g, "state_abr", primal_s=result["primal"])
+summary = rr.compute_summary(g, "state_abr", primal_s=result["primal"])
 ```
 
-Let's plot the rankings, via `sr.plot_hist(summary)`. Note that most of the node catetories are regularized to have the same mean ranking.
+Let's plot the rankings, via `rr.plot_hist(summary)`. Note that most of the node categories are regularized to have the same mean ranking.
 
 ![A histogram of four ranking groups, where most of the metadata share the same mean ranking.](docs/assets/us_air_traffic_hist.png)
 
-We provided a summary via `sr.print_summary_table(summary)`.
+We provided a summary via `rr.print_summary_table(summary)`.
 
       +-------+-------+--------+-----------------------------------------+--------+---------+
       | Group | #Tags | #Nodes | Members                                 |   Mean |     Std |
@@ -62,12 +62,12 @@ The result suggests that states such as `CA`, `WA`, or `AK` are significantly mo
 
 ## Data sets
 
-We have a companion repo—[rSpringRank-data](https://github.com/junipertcy/rSpringRank-data)—for data sets used in the paper. Which are:
+We have a companion repo—[regrank-data](https://github.com/junipertcy/regrank-data)—for data sets used in the paper. Which are:
 
-* [PhD_exchange](https://github.com/junipertcy/rSpringRank-data/tree/main/PhD_exchange)
-* [Parakeet](https://github.com/junipertcy/rSpringRank-data/tree/main/parakeet)
+* [PhD_exchange](https://github.com/junipertcy/regrank-data/tree/main/PhD_exchange)
+* [Parakeet](https://github.com/junipertcy/regrank-data/tree/main/parakeet)
 
-In addendum, we have provided the [rSpringRank.datasets](https://junipertcy.github.io/rSpringRank/datasets.html) submodule to load data sets hosted by other repositories, such as the [Netzschleuder](http://networkrepository.com/). See the docs for more information.
+In addendum, we have provided the [regrank.datasets](https://junipertcy.github.io/regrank/datasets.html) submodule to load data sets hosted by other repositories, such as the [Netzschleuder](http://networkrepository.com/). See the docs for more information.
 
 ## Development
 
@@ -75,4 +75,4 @@ The library uses pytest to ensure correctness. The test suite depends on [mosek]
 
 ## License
 
-**rSpringRank** is open-source and licensed under the [GNU Lesser General Public License v3.0](https://www.gnu.org/licenses/lgpl-3.0.en.html).
+**regrank** is open-source and licensed under the [GNU Lesser General Public License v3.0](https://www.gnu.org/licenses/lgpl-3.0.en.html).

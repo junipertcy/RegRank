@@ -2,12 +2,12 @@ from math import comb
 
 import numpy as np
 
-from rSpringRank.io.graph2mat import compute_ell
-from rSpringRank.optimize.cvx import cp, same_mean_cvx
-from rSpringRank.optimize.firstOrderMethods import gradientDescent
-from rSpringRank.optimize.losses import sum_squared_loss, sum_squared_loss_conj
-from rSpringRank.optimize.regularizers import same_mean_reg
-from rSpringRank.stats.experiments import PhDExchange
+from regrank.io.graph2mat import compute_ell
+from regrank.optimize.cvx import cp, same_mean_cvx
+from regrank.optimize.firstOrderMethods import gradientDescent
+from regrank.optimize.losses import sum_squared_loss, sum_squared_loss_conj
+from regrank.optimize.regularizers import same_mean_reg
+from regrank.stats.experiments import PhDExchange
 
 # import gurobipy as gp
 # HOW TO SUPPRESS GUROBI OUTPUT (Set parameter Username)?

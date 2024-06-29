@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # Regularized-SpringRank -- regularized methods for efficient ranking in networks
 #
@@ -23,7 +22,7 @@ import cvxpy as cp
 from .losses import huber_loss, sum_squared_loss, sum_squared_loss_conj
 
 
-class same_mean_cvx(object):
+class same_mean_cvx:
     def __init__(self, g, L, **kwargs):
         self.g = g
         self.L = L
@@ -59,7 +58,7 @@ class same_mean_cvx(object):
         return self.loss_fn_primal(primal_s) + lambd * self.regularizer(primal_s)
 
 
-class vanilla_cvx(object):
+class vanilla_cvx:
     def __init__(self, g, alpha=1):
         self.g = g
         self.alpha = alpha
@@ -74,7 +73,7 @@ class vanilla_cvx(object):
         return self.loss_fn_primal(primal_s)
 
 
-class huber_cvx(object):
+class huber_cvx:
     def __init__(self, g, alpha=1, M=1, incl_reg=False):
         self.g = g
         self.alpha = alpha

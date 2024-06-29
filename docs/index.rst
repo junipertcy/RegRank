@@ -1,10 +1,10 @@
-.. rSpringRank documentation master file, created by
+.. regrank documentation master file, created by
    sphinx-quickstart on Mon Jun 10 00:27:52 2024.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
 =====================================
-The :mod:`rSpringRank` User Guide
+The :mod:`regrank` User Guide
 =====================================
 
 .. toctree::
@@ -41,4 +41,4 @@ Please contact Tzu-Chi Yen <tzuchi.yen@colorado.edu> should you have any questio
 
 Acknowledgements
 ----------------
-The :code:`rSpringRank` library is inspired and supported by these great humans: TBD.
+The :code:`regrank` library is inspired and supported by these great humans: TBD.
