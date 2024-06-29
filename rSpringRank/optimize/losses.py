@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # Regularized-SpringRank -- regularized methods for efficient ranking in networks
 #
@@ -20,11 +19,14 @@
 
 import cvxpy as cp
 import numpy as np
-from numba import njit
+from numba import njit  # type: ignore
 from numpy.linalg import norm
 
-from ..io import (cast2sum_squares_form, compute_cache_from_data,
-                  compute_cache_from_data_t)
+from ..io import (
+    cast2sum_squares_form,
+    compute_cache_from_data,
+    compute_cache_from_data_t,
+)
 
 
 class Loss:

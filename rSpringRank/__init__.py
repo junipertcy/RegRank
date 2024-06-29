@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # Regularized-SpringRank -- regularized methods for efficient ranking in networks
 #
@@ -20,8 +19,6 @@
 
 import importlib as _importlib
 import os
-
-
 import warnings
 
 import rSpringRank
@@ -34,7 +31,6 @@ from rSpringRank import *
 from rSpringRank.datasets import *
 from rSpringRank.draw import *
 from rSpringRank.io import *
-from rSpringRank.optimize import *
 from rSpringRank.stats import *
 
 __package__ = "rSpringRank"

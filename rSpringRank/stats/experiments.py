@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # Regularized-SpringRank -- regularized methods for efficient ranking in networks
 #
@@ -26,6 +25,7 @@ import matplotlib.pyplot as plt
 
 try:
     import graph_tool.all as gt
+
 except ModuleNotFoundError:
     print("graph_tool not found. Please install graph_tool.")
 from math import comb
@@ -38,8 +38,7 @@ try:
     username = "tzuchi"
     password = "FI4opd12cjazqPL"
     port = "127.0.0.1:27017"
-
-    client = MongoClient("mongodb://%s:%s@%s" % (username, password, port))
+    client: MongoClient = MongoClient(f"mongodb://{username}:{password}@{port}")
 except ModuleNotFoundError:
     print("pymongo not found. Please install pymongo.")
 
@@ -458,7 +457,7 @@ class Parakeet(Experiment):
         name2id = dict()
         id_counter = 0
         qtrs = []
-        with open(path, "r") as f:
+        with open(path) as f:
             lines = f.readlines()
             for line in lines:
                 # src: actor; tar: target

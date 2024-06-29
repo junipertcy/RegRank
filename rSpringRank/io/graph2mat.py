@@ -10,7 +10,7 @@ from itertools import combinations
 from math import comb
 
 import numpy as np
-from numba import njit, types
+from numba import njit, types  # type: ignore
 from numba.typed import Dict
 from scipy.linalg import sqrtm
 from scipy.sparse.linalg import inv
@@ -85,7 +85,9 @@ def cast2sum_squares_form_t(
             col_b.append(0)
             data_b.append(-(val**0.5))
 
-        row += [_ for _ in range((t + 1) * (shape**2) - shape, (t + 1) * (shape**2))]
+        row += [
+            _ for _ in range((t + 1) * (shape**2) - shape, (t + 1) * (shape**2))
+        ]
         col += [_ for _ in range(t * shape, (t + 1) * shape)]
         data += [alpha**0.5] * shape
 
@@ -188,17 +190,17 @@ def cast2sum_squares_form(data, alpha, regularization=True):  # TODO: this is sl
     A_nonzero = A.nonzero()
     num_nonzero = A_nonzero[0].shape[0]
     if regularization:
-        row, col, data = [
+        row, col, data = (
             np.zeros(num_nonzero * 2 + shape, dtype=np.float64, order="C")
             for _ in range(3)
-        ]
+        )
     else:
-        row, col, data = [
+        row, col, data = (
             np.zeros(num_nonzero * 2, dtype=np.float64, order="C") for _ in range(3)
-        ]
-    row_b, col_b, data_b = [
+        )
+    row_b, col_b, data_b = (
         np.zeros(num_nonzero, dtype=np.float64, order="C") for _ in range(3)
-    ]
+    )
     counter_B = counter_b = 0
     # data_iter = iter(A.data)
     for ind in zip(*find(A)):
@@ -237,7 +239,9 @@ def cast2sum_squares_form(data, alpha, regularization=True):  # TODO: this is sl
             data[counter_B] = alpha**0.5
             counter_B += 1
         B = csc_matrix((data, (row, col)), shape=(shape**2, shape), dtype=np.float64)
-        b = csc_matrix((data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float64)
+        b = csc_matrix(
+            (data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float64
+        )
     else:
         B = csc_matrix(
             (data, (row, col)), shape=(shape**2 - shape, shape), dtype=np.float64

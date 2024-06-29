@@ -62,6 +62,9 @@ sphinx-markdown-tables = "^0.0.17"
 recommonmark = "^0.7.1"
 mathjax = "^0.1.2"
 scalene = "^1.5.42"
+mypy = "^1.10.1"
+types-six = "^1.16.21"
+types-docutils = "^0.21.0.20240423"
 
 
 [tool.black]

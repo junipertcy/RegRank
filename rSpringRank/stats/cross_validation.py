@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # Regularized-SpringRank -- regularized methods for efficient ranking in networks
 #
@@ -33,8 +32,9 @@ except ModuleNotFoundError:
     print("graph_tool not found. Please install graph_tool.")
 import warnings
 from collections import defaultdict
+from typing import Dict
 
-from numba import njit
+from numba import njit  # type: ignore
 from scipy.interpolate import RegularGridInterpolator
 from sklearn.model_selection import KFold
 
@@ -137,7 +137,7 @@ def betaGlobal(A, s):
     return b
 
 
-class CrossValidation(object):
+class CrossValidation:
     def __init__(
         self,
         g,
@@ -150,20 +150,20 @@ class CrossValidation(object):
         self.all_edges = g.get_edges()
         # self.G = G.copy()  # probably not needed, as we work on the edge indices
         self.g = g
-        self.folds_per_rep = defaultdict(dict)
+        self.folds_per_rep: Dict[int, Dict[int, int]] = defaultdict(dict)
         self.n_folds = n_folds
         self.n_subfolds = n_subfolds
         self.main_cv_splits = self.get_cv_realization(g, n_folds, seed=seed)
 
         self.seed = seed
-        self.subseeds = defaultdict(dict)
+        self.subseeds: Dict[int, Dict[int, int]] = defaultdict(dict)
         self.n_reps = n_reps
-        self.sub_cv_splits = defaultdict(
+        self.sub_cv_splits: Dict[int, Dict[int, Dict[int, np.ndarray]]] = defaultdict(
             dict
         )  # key structure: fold_id -> rep_id -> subfold_id -> edge_filter
 
-        self.cv_alpha_a = defaultdict(dict)
-        self.cv_alpha_L = defaultdict(dict)
+        self.cv_alpha_a: Dict[str, Dict[int, float]] = defaultdict(dict)
+        self.cv_alpha_L: Dict[str, Dict[int, float]] = defaultdict(dict)
         # for idx, (train, test) in enumerate(self.kf.split(self.all_edges)):
         #     [idx] = g.new_edge_property("bool", val=True)
         #     for _ in test:
@@ -252,7 +252,6 @@ class CrossValidation(object):
             self.cv_alpha_L["vanilla"][fold_id] = cv_alpha_L
 
         elif self.model.method == "annotated":
-
             list_alpha, list_lambd = params
             list_alpha_interp, list_lambd_interp = interp
 

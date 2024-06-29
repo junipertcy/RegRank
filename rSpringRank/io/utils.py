@@ -2,7 +2,7 @@ from logging import getLogger
 from random import sample
 
 import numpy as np
-from numba import jit
+from numba import njit  # type: ignore
 from scipy.sparse import csr_matrix
 
 logger = getLogger(__name__)
@@ -83,7 +83,7 @@ def D_operator_reg_t_sparse(a, s):
     return output_t
 
 
-@jit(nopython=True)
+@njit
 def D_operator_reg_t(a, s):
     n = len(a)
     output_t = np.zeros(n, dtype=np.float64)  # if we avoid the zero rows
@@ -116,7 +116,7 @@ def D_operator_reg_sparse(a, s):
     return output
 
 
-@jit(nopython=True)
+@njit
 def D_operator_reg(a, s):
     n = len(a)
     output = np.zeros(n**2 - n, dtype=np.float64)  # if we avoid the zero rows
@@ -147,7 +147,7 @@ def D_operator_b_sparse(a):
     return output
 
 
-@jit(nopython=True)
+@njit
 def D_operator_b(a):
     n = len(a)
     output = np.zeros(n**2 - n, dtype=np.float64)  # if we avoid the zero rows
