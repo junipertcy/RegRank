@@ -39,7 +39,7 @@ firstOrderMethods module
       incorporate the bookkeeper class into the gradient descent code
         (this makes the actual algorithm itself more clear)
       in gradient descent code, is the function value properly updated? May affect linesearches
-    
+
     Released under the Modified BSD License:
 
 Copyright (c) 2023, Stephen Becker. All rights reserved.
@@ -54,7 +54,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 """
 import numpy as np
 from numpy.linalg import norm
-from scipy import linalg
 
 
 def as_column_vec(x):
@@ -133,7 +132,9 @@ def LipschitzLinesearch(
     if fx is None:  # don't calculate if it was already calculated
         fx = f(x)
     if prox is None:
-        prox = lambda x, stepsize: x
+
+        def prox(x, stepsize):
+            return x
 
     xNew = prox(x - t * grad, t)
     fNew = f(xNew)
@@ -523,9 +524,7 @@ def gradientDescent(
         def pprint(*args, **kwargs):
             pass  # The "pprint" function does nothing
 
-        display = False
     else:
-        display = True
         pprint = print
 
     if ArmijoLinesearch is None:

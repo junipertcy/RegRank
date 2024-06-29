@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # Regularized-SpringRank -- regularized methods for efficient ranking in networks
 #
@@ -55,7 +54,7 @@ class SpringRank:
         # self.change_base_model(BaseModel)
 
     def fit_scaled(self, data, scale=0.75):
-        if type(data) == gt.Graph:
+        if type(data) is gt.Graph:
             adj = gt.adjacency(data)
         else:
             raise NotImplementedError
@@ -69,7 +68,7 @@ class SpringRank:
         return info
 
     def fit(self, data):
-        if type(data) == gt.Graph:
+        if type(data) is gt.Graph:
             adj = gt.adjacency(data)
         else:
             raise NotImplementedError
@@ -157,7 +156,7 @@ class SpringRank:
         if alpha == 0:
             rank = self.csr_SpringRank(A)
         else:
-            if type(A) == np.ndarray:
+            if type(A) is np.ndarray:
                 A = scipy.sparse.csr_matrix(A)
             # print("Running bicgstab to solve Ax=b ...")
             # print("adj matrix A:\n", A.toarray())
@@ -196,7 +195,7 @@ class SpringRank:
         return x
 
 
-class rSpringRank(object):
+class rSpringRank:
     def __init__(
         self,
         method="vanilla",
