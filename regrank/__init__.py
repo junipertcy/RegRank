@@ -40,8 +40,6 @@ __author__ = """\n""".join(
     ]
 )
 __URL__ = "https://github.com/junipertcy/regrank"
-__version__ = "0.2.29"
-__release__ = "0.2.29"
 
 submodules = ["datasets", "io", "optimize", "stats", "draw"]
 func_optimize = ["SpringRankLegacy", "SpringRank"]

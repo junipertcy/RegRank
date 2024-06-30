@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "regrank"
-version = "0.2.29"
+version = "0.2.30"
 authors = ["Tzu-Chi Yen <tzuchi.yen@colorado.edu>"]
 license = "LGPL-3.0-or-later"
 readme = "README.md"
@@ -35,7 +35,6 @@ classifiers = [
     'Topic :: Scientific/Engineering',
     'Topic :: Software Development :: Libraries',
 ]
-packages = [{ include = "src/regrank" }]
 
 [tool.poetry.dependencies]
 python = "!=3.11.0,>=3.10"
@@ -75,4 +74,4 @@ skip-string-normalization = true
 # Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
 # McCabe complexity (`C901`) by default.
 select = ["E4", "E7", "E9", "F"]
-ignore = ["F403"]
+ignore = ["F401", "F403"]
