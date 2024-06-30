@@ -29,14 +29,14 @@ import regrank as rr
 g = rr.datasets.us_air_traffic()
 
 # Create a model
-model = rr.optimize.regrank(method="annotated")
+model = rr.SpringRank(method="annotated")
 
 # Fit the model: We decided to analyze the `state_abr` nodal metadata,
 # We may inspect `g.list_properties()` for other metadata to analyze.
 result = model.fit(g, alpha=1, lambd=0.5, goi="state_abr")
 
 # Now, result["primal"] should have the rankings. We can compute a summary.
-summary = rr.compute_summary(g, "state_abr", primal_s=result["primal"])
+summary = model.compute_summary(g, "state_abr", primal_s=result["primal"])
 ```
 
 Let's plot the rankings, via `rr.plot_hist(summary)`. Note that most of the node categories are regularized to have the same mean ranking.

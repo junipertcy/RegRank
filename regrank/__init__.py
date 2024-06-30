@@ -72,8 +72,8 @@ def __getattr__(name):
     else:
         try:
             return globals()[name]
-        except KeyError:
-            raise AttributeError(f"Module 'regrank' has no attribute '{name}'")
+        except KeyError as err:
+            raise AttributeError(f"Module 'regrank' has no attribute '{name}'") from err
 
 
 def show_config():

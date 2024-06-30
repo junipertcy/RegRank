@@ -112,8 +112,8 @@ def PhD_exchange():
     eweight = g.new_ep("double")
     etime = g.new_ep("int")
 
-    name2id = dict()
-    time2id = dict()
+    name2id = {}
+    time2id = {}
     nameid = 0
     timeid = 0
 
@@ -176,7 +176,7 @@ def parakeet(group="G1"):
     """
     fname = fetch_data("aggXquarter.txt")
     g = gt.Graph()
-    name2id = dict()
+    name2id = {}
     id_counter = 0
     qtrs = []
     with open(fname) as f:

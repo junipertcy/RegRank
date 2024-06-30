@@ -3,7 +3,7 @@ profile.html
 profile.json
 
 # misc
-bin/  
+bin/
 deploy.sh
 examples/
 test-sdist/
@@ -186,4 +186,3 @@ cython_debug/
 # pixi environments
 .pixi
 *.egg-info
-

@@ -85,10 +85,8 @@ def cast2sum_squares_form_t(
             col_b.append(0)
             data_b.append(-(val**0.5))
 
-        row += [
-            _ for _ in range((t + 1) * (shape**2) - shape, (t + 1) * (shape**2))
-        ]
-        col += [_ for _ in range(t * shape, (t + 1) * shape)]
+        row += list(range((t + 1) * (shape**2) - shape, (t + 1) * (shape**2)))
+        col += list(range(t * shape, (t + 1) * shape))
         data += [alpha**0.5] * shape
 
         # Note that you do not need to specify zeros, since the default value is zero.
@@ -100,14 +98,11 @@ def cast2sum_squares_form_t(
 
         # regularize-over-time term
         if t < T - 1:
-            _row = [
-                _
-                for _ in range(
-                    T * shape**2 + t * shape, T * shape**2 + shape + t * shape
-                )
-            ]
-            _col_t = [_ for _ in range(t * shape, (t + 1) * shape)]
-            _col_t_plus_1 = [_ for _ in range((t + 1) * shape, ((t + 1) + 1) * shape)]
+            _row = list(
+                range(T * shape**2 + t * shape, T * shape**2 + shape + t * shape)
+            )
+            _col_t = list(range(t * shape, (t + 1) * shape))
+            _col_t_plus_1 = list(range((t + 1) * shape, ((t + 1) + 1) * shape))
             if separate:
                 shift = T * shape**2
                 row_T += [(_ - shift) for _ in _row]
@@ -239,9 +234,7 @@ def cast2sum_squares_form(data, alpha, regularization=True):  # TODO: this is sl
             data[counter_B] = alpha**0.5
             counter_B += 1
         B = csc_matrix((data, (row, col)), shape=(shape**2, shape), dtype=np.float64)
-        b = csc_matrix(
-            (data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float64
-        )
+        b = csc_matrix((data_b, (row_b, col_b)), shape=(shape**2, 1), dtype=np.float64)
     else:
         B = csc_matrix(
             (data, (row, col)), shape=(shape**2 - shape, shape), dtype=np.float64
@@ -349,7 +342,7 @@ def compute_ell(g, key=None):
         raise AttributeError(
             f"Key: {key} not found. Please provide a 'group of interest' for the vertex property, "
             + "so we can compute the annotated rankings."
-        )
+        ) from None
     _ctr_classes = dict(Counter({k: v**-1 for k, v in ctr_classes.items()}))
     ctr_classes = Dict.empty(key_type=types.int64, value_type=types.float64)
     for _k, value in _ctr_classes.items():

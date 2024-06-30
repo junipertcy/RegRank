@@ -178,7 +178,7 @@ class CrossValidation:
         all_edges = graph.get_edges()
         _edge_filter_dict = {}
 
-        for idx, (train, test) in enumerate(kf.split(all_edges)):
+        for idx, (_, test) in enumerate(kf.split(all_edges)):
             _edge_filter_dict[idx] = graph.new_edge_property("bool", val=True)
             for _ in test:
                 _edge_filter_dict[idx][all_edges[_]] = False

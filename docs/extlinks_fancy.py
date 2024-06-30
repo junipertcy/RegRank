@@ -1,21 +1,19 @@
-# -*- coding: utf-8 -*-
 """
-    Extension to save typing and prevent hard-coding of base URLs in the reST
-    files.
+Extension to save typing and prevent hard-coding of base URLs in the reST
+files.
 
-    This adds a new config value called ``extlinks_fancy`` that is created like this::
+This adds a new config value called ``extlinks_fancy`` that is created like this::
 
-       extlinks_fancy = {'exmpl': ('http://example.com/{0}.html', "Example {0}"), ...}
+   extlinks_fancy = {'exmpl': ('http://example.com/{0}.html', "Example {0}"), ...}
 
-    You can also give an explicit caption, e.g. :exmpl:`Foo <foo>`.
+You can also give an explicit caption, e.g. :exmpl:`Foo <foo>`.
 
-    :copyright: Copyright 2007-2017 by the Sphinx team, see AUTHORS.
-    :license: BSD, see LICENSE for details.
+:copyright: Copyright 2007-2017 by the Sphinx team, see AUTHORS.
+:license: BSD, see LICENSE for details.
 """
 
 import sphinx
 from docutils import nodes, utils
-from six import iteritems
 from sphinx.util.nodes import split_explicit_title
 
 
@@ -45,7 +43,7 @@ def make_link_role(base_urls, prefixes):
 
 
 def setup_link_roles(app):
-    for name, (base_urls, prefixes) in iteritems(app.config.extlinks_fancy):
+    for name, (base_urls, prefixes) in app.config.extlinks_fancy.items():
         app.add_role(name, make_link_role(base_urls, prefixes))
 
 

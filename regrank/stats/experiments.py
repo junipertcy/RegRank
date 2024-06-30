@@ -179,7 +179,7 @@ class PhDExchange(Experiment):
         return collection_by_goi
 
     def compute_basic_stats(self, sslc=None, dual_v=None, primal_s=None):
-        self.basic_stats["deviation_dict"] = dict()
+        self.basic_stats["deviation_dict"] = {}
         if self.data_goi is None:
             self._compute_collection_by_goi(sslc, dual_v=dual_v, primal_s=primal_s)
 
@@ -193,7 +193,7 @@ class PhDExchange(Experiment):
                 self.basic_stats["total"] += 1
             self.basic_stats["deviation_dict"][key_pair] = diff
 
-        self.basic_stats["mean_dict"] = dict()
+        self.basic_stats["mean_dict"] = {}
         for col_key in self.data_goi.keys():
             self.basic_stats["mean_dict"][col_key] = np.mean(self.data_goi[col_key])
 
@@ -228,7 +228,7 @@ class PeerInstitution(Experiment):
         d = client["peer-institutions"]["edges"].find(
             {}, {"_id": 0, "unitid": 1, "peer_unitid": 1}
         )
-        unitid2nodeid = dict()
+        unitid2nodeid = {}
         counter = 0
         unitid_set = set()
         for _d in d:
@@ -287,7 +287,7 @@ class PeerInstitution(Experiment):
         return self.g
 
     def compute_basic_stats(self, sslc=None, dual_v=None, primal_s=None):
-        self.basic_stats["deviation_dict"] = dict()
+        self.basic_stats["deviation_dict"] = {}
         if self.data_goi is None:
             self._compute_collection_by_goi(sslc, dual_v=dual_v, primal_s=primal_s)
 
@@ -301,7 +301,7 @@ class PeerInstitution(Experiment):
                 self.basic_stats["total"] += 1
             self.basic_stats["deviation_dict"][key_pair] = diff
 
-        self.basic_stats["mean_dict"] = dict()
+        self.basic_stats["mean_dict"] = {}
         for col_key in self.data_goi.keys():
             self.basic_stats["mean_dict"][col_key] = np.mean(self.data_goi[col_key])
 
@@ -324,7 +324,7 @@ class PeerInstitution(Experiment):
 
         bins = np.histogram(np.concatenate(hstack), bins=bin_count)[1]
 
-        c18toMEANING = dict()
+        c18toMEANING = {}
         c18toMEANING["15"] = ("R1", "#d73027")  # Mean: 0.882
         c18toMEANING["21"] = ("B:A&S", "#fc8d59")  # Mean: 0.245
         c18toMEANING["16"] = ("R2", "#fee090")  # Mean: 0.136

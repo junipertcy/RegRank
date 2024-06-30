@@ -40,7 +40,7 @@ def generate_adjacent_colors(hex_color, k):
 def plot_hist(summary, bin_count=30, legend=True, saveto=None):
     data_goi = summary["goi"]
     cluster_colors = generate_complementary_colors(len(summary["avg_clusters"]))
-    _cluster_colors = dict()
+    _cluster_colors = {}
     for idx, cluster in enumerate(summary["avg_clusters"]):
         plt.axvline(
             np.mean(cluster),

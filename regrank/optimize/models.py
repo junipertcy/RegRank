@@ -132,7 +132,9 @@ def cluster_1d_array(arr, min_samples=2):
 
 
 class BaseModel:
-    def __init__(self, loss, reg=zero_reg()):
+    def __init__(self, loss, reg=None):
+        if reg is None:
+            reg = zero_reg()
         self.loss = loss
         self.local_reg = reg
 
@@ -153,7 +155,7 @@ class BaseModel:
         for idx, _c in enumerate(node_metadata):
             data_goi[_c].append(output[idx])
 
-        summary = dict()
+        summary = {}
         keys = []
         diff_avgs = []
         for idx, key in enumerate(data_goi):
@@ -325,9 +327,9 @@ class SpringRank(BaseModel):
         self.alpha = 0
         self.lambd = 0
         self.method = method
-        self.result = dict()
+        self.result = {}
         self.sslc = None
-        self.fo_setup = dict()
+        self.fo_setup = {}
         self.result["primal"] = None
         self.result["dual"] = None
         self.result["timewise"] = None
