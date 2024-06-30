@@ -1,3 +1,3 @@
-from .models import SpringRank, rSpringRank
+from .models import SpringRank, SpringRankLegacy
 
-__all__ = ["SpringRank", "rSpringRank"]
+__all__ = ["SpringRankLegacy", "SpringRank"]

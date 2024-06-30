@@ -23,6 +23,7 @@ except ModuleNotFoundError:
     print("graph_tool not found. Please install graph_tool.")
 
 import warnings
+from collections import defaultdict
 
 import cvxpy as cp
 import numpy as np
@@ -31,9 +32,10 @@ from numpy.linalg import norm
 from scipy.optimize import brentq
 from scipy.sparse import SparseEfficiencyWarning, csr_matrix, spdiags
 from scipy.sparse.linalg import lsmr, lsqr
+from sklearn.neighbors import NearestNeighbors
 
 from ..io import cast2sum_squares_form, cast2sum_squares_form_t
-from .cvx import huber_cvx, vanilla_cvx
+from .cvx import huber_cvx, legacy_cvx
 from .firstOrderMethods import gradientDescent
 from .losses import sum_squared_loss_conj
 from .regularizers import same_mean_reg, zero_reg
@@ -41,13 +43,133 @@ from .regularizers import same_mean_reg, zero_reg
 warnings.simplefilter("ignore", SparseEfficiencyWarning)
 
 
+def determine_optimal_epsilon(arr, min_samples=2):
+    """
+    Determines the optimal epsilon value for clustering using the k-distance graph method.
+
+    Parameters:
+    arr (np.ndarray): The input array of float values.
+    min_samples (int): The number of nearest neighbors to consider.
+
+    Returns:
+    float: The optimal epsilon value.
+    """
+    # Reshape the array for NearestNeighbors
+    arr = arr.reshape(-1, 1)
+
+    # Compute the nearest neighbors
+    neighbors = NearestNeighbors(n_neighbors=min_samples)
+    neighbors_fit = neighbors.fit(arr)
+    distances, indices = neighbors_fit.kneighbors(arr)
+
+    # Sort the distances to the nearest neighbors
+    distances = np.sort(distances[:, 1], axis=0)
+
+    # Find the point of maximum curvature (elbow)
+    diff = np.diff(distances)
+    optimal_index = np.argmax(diff)
+    optimal_epsilon = distances[optimal_index]
+
+    return optimal_epsilon
+
+
+def cluster_1d_array(arr, min_samples=2):
+    """
+    Clusters a 1D array of float values such that adjacent values are grouped together.
+
+    Parameters:
+    arr (list or np.ndarray): The input array of float values.
+    min_samples (int): The number of nearest neighbors to consider for determining epsilon.
+
+    Returns:
+    tuple: A tuple containing a list of clusters and a dictionary mapping each index of the input array to the index of the identified cluster.
+    """
+    if not isinstance(arr, np.ndarray):
+        arr = np.array(arr)
+
+    # Determine the optimal epsilon value
+    eps = determine_optimal_epsilon(arr, min_samples)
+
+    # Sort the array and keep track of original indices
+    sorted_indices = np.argsort(arr)
+    sorted_arr = arr[sorted_indices]
+
+    # Initialize clusters and index mapping
+    clusters = []
+    index_mapping = {}
+    current_cluster = [sorted_arr[0]]
+    current_cluster_index = 0
+
+    # Iterate through the sorted array and form clusters
+    for i in range(1, len(sorted_arr)):
+        if sorted_arr[i] - sorted_arr[i - 1] <= eps:
+            current_cluster.append(sorted_arr[i])
+        else:
+            clusters.append(current_cluster)
+            for idx in sorted_indices[i - len(current_cluster) : i]:
+                index_mapping[idx] = current_cluster_index
+            current_cluster = [sorted_arr[i]]
+            current_cluster_index += 1
+
+    # Append the last cluster
+    clusters.append(current_cluster)
+    for idx in sorted_indices[len(sorted_arr) - len(current_cluster) :]:
+        index_mapping[idx] = current_cluster_index
+
+    # Sort clusters by their mean values in descending order
+    cluster_means = [np.mean(cluster) for cluster in clusters]
+    sorted_cluster_indices = np.argsort(cluster_means)[::-1]
+    sorted_clusters = [clusters[i] for i in sorted_cluster_indices]
+
+    # Update index_mapping according to the new cluster order
+    new_index_mapping = {}
+    for new_cluster_index, original_cluster_index in enumerate(sorted_cluster_indices):
+        for idx in index_mapping:
+            if index_mapping[idx] == original_cluster_index:
+                new_index_mapping[idx] = new_cluster_index
+
+    return sorted_clusters, new_index_mapping
+
+
 class BaseModel:
     def __init__(self, loss, reg=zero_reg()):
         self.loss = loss
         self.local_reg = reg
 
+    @staticmethod
+    def compute_summary(g, goi, sslc=None, dual_v=None, primal_s=None):
+        if dual_v is not None and primal_s is not None:
+            raise AttributeError("Only use either dual_v or primal_s.")
+        elif dual_v is None and primal_s is None:
+            raise AttributeError("You need some input data.")
+        elif dual_v is not None:
+            # We take firstOrderMethods.py output directly
+            dual_v = np.array(dual_v).reshape(-1, 1)
+            output = sslc.dual2primal(dual_v)
+        else:
+            output = primal_s
+        node_metadata = np.array(list(g.vp[goi]))
+        data_goi = defaultdict(list)
+        for idx, _c in enumerate(node_metadata):
+            data_goi[_c].append(output[idx])
 
-class SpringRank:
+        summary = dict()
+        keys = []
+        diff_avgs = []
+        for idx, key in enumerate(data_goi):
+            keys.append(data_goi[key])
+            diff_avgs.append(np.mean(data_goi[key]))
+            summary[idx] = (key, len(data_goi[key]))
+
+        summary["avg_clusters"], summary["keyid2clusterid"] = cluster_1d_array(
+            diff_avgs
+        )
+        summary["goi"] = data_goi
+        summary["rankings"] = output
+        return summary
+
+
+class SpringRankLegacy:
     def __init__(self, alpha=0):
         self.alpha = alpha
         # pass
@@ -195,10 +317,10 @@ class SpringRank:
         return x
 
 
-class rSpringRank:
+class SpringRank(BaseModel):
     def __init__(
         self,
-        method="vanilla",
+        method="legacy",
     ):
         self.alpha = 0
         self.lambd = 0
@@ -221,13 +343,13 @@ class rSpringRank:
         if np.sum([self.cvxpy, self.bicgstab]) > 1:
             raise ValueError("Only one of cvxpy and bicgstab can be True.")
 
-        if self.method == "vanilla":
+        if self.method == "legacy":
             if self.cvxpy:
-                v_cvx = vanilla_cvx(data, alpha=self.alpha)
+                v_cvx = legacy_cvx(data, alpha=self.alpha)
                 primal_s = cp.Variable((data.num_vertices(), 1))
                 problem = cp.Problem(
                     cp.Minimize(v_cvx.objective_fn_primal(primal_s))
-                )  # for vanilla
+                )  # for legacy
                 problem.solve(
                     verbose=False,
                 )
@@ -237,7 +359,9 @@ class rSpringRank:
                 self.result["primal"] = primal
                 self.result["f_primal"] = problem.value
             elif self.bicgstab:
-                self.result["primal"] = SpringRank(alpha=self.alpha).fit(data)["rank"]
+                self.result["primal"] = SpringRankLegacy(alpha=self.alpha).fit(data)[
+                    "rank"
+                ]
             else:
                 B, b = cast2sum_squares_form(data, alpha=self.alpha)
                 b_array = b.toarray(order="C")

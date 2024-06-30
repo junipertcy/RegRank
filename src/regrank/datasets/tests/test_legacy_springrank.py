@@ -1,22 +1,19 @@
 import numpy as np
 
 import regrank as rr
-from regrank.optimize.cvx import cp, vanilla_cvx
-from regrank.optimize.models import SpringRank
+from regrank.optimize.cvx import cp, legacy_cvx
 
 
 def compute(g, alpha):
     # sg = SmallGraph()
-    v_cvx = vanilla_cvx(g, alpha=alpha)
+    v_cvx = legacy_cvx(g, alpha=alpha)
     primal_s = cp.Variable((g.num_vertices(), 1))
-    problem = cp.Problem(
-        cp.Minimize(v_cvx.objective_fn_primal(primal_s))
-    )  # for vanilla
+    problem = cp.Problem(cp.Minimize(v_cvx.objective_fn_primal(primal_s)))  # for legacy
     problem.solve(verbose=False)
 
     v_cvx_output = primal_s.value.reshape(-1, 1)
 
-    sr = SpringRank(alpha=alpha)
+    sr = rr.SpringRankLegacy(alpha=alpha)
 
     result = sr.fit(g)
     bicgstab_output = result["rank"]

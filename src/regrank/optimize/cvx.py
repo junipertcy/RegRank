@@ -58,7 +58,7 @@ class same_mean_cvx:
         return self.loss_fn_primal(primal_s) + lambd * self.regularizer(primal_s)
 
 
-class vanilla_cvx:
+class legacy_cvx:
     def __init__(self, g, alpha=1):
         self.g = g
         self.alpha = alpha

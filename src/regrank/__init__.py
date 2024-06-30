@@ -19,19 +19,15 @@
 
 import importlib as _importlib
 import os
-import warnings
 
-import regrank
-import regrank.datasets
-import regrank.draw
-import regrank.io
-import regrank.optimize
-import regrank.stats
-from regrank import *
 from regrank.datasets import *
 from regrank.draw import *
 from regrank.io import *
+from regrank.optimize import *
 from regrank.stats import *
+
+# import warnings
+
 
 __package__ = "regrank"
 __title__ = "regrank: Regularized methods for efficient ranking in networks."
@@ -44,10 +40,11 @@ __author__ = """\n""".join(
     ]
 )
 __URL__ = "https://github.com/junipertcy/regrank"
-__version__ = "0.2.28"
-__release__ = "0.2.28"
+__version__ = "0.2.29"
+__release__ = "0.2.29"
 
 submodules = ["datasets", "io", "optimize", "stats", "draw"]
+func_optimize = ["SpringRankLegacy", "SpringRank"]
 dunder = [
     "__version__",
     "__package__",

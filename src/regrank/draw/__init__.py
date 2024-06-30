@@ -1,44 +1,13 @@
-__all__ = ["compute_summary", "plot_hist", "print_summary_table"]
+__all__ = ["plot_hist", "print_summary_table"]
 
 import random
 import textwrap
-from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import numpy as np
 from prettytable import PrettyTable
 
-from .utils import cluster_1d_array, generate_complementary_colors, reverse_dict
-
-
-def compute_summary(g, goi, sslc=None, dual_v=None, primal_s=None):
-    if dual_v is not None and primal_s is not None:
-        raise AttributeError("Only use either dual_v or primal_s.")
-    elif dual_v is None and primal_s is None:
-        raise AttributeError("You need some input data.")
-    elif dual_v is not None:
-        # We take firstOrderMethods.py output directly
-        dual_v = np.array(dual_v).reshape(-1, 1)
-        output = sslc.dual2primal(dual_v)
-    else:
-        output = primal_s
-    node_metadata = np.array(list(g.vp[goi]))
-    data_goi = defaultdict(list)
-    for idx, _c in enumerate(node_metadata):
-        data_goi[_c].append(output[idx])
-
-    summary = dict()
-    keys = []
-    diff_avgs = []
-    for idx, key in enumerate(data_goi):
-        keys.append(data_goi[key])
-        diff_avgs.append(np.mean(data_goi[key]))
-        summary[idx] = (key, len(data_goi[key]))
-
-    summary["avg_clusters"], summary["keyid2clusterid"] = cluster_1d_array(diff_avgs)
-    summary["goi"] = data_goi
-    summary["rankings"] = output
-    return summary
+from .utils import generate_complementary_colors, reverse_dict
 
 
 #     return adjacent_colors
