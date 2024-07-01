@@ -1,7 +1,7 @@
 Drawing functions
 =================
 
-.. automodule:: rSpringRank.draw
+.. automodule:: regrank.draw
     :members:
     :undoc-members:
     :show-inheritance:

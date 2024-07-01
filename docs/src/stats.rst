@@ -1,7 +1,8 @@
 Stats functions
 ===============
 
-.. automodule:: rSpringRank.stats
+.. automodule:: regrank.stats
     :members:
     :undoc-members:
     :show-inheritance:
+f

@@ -1,7 +1,7 @@
 Optimize functions
 ==================
 
-.. automodule:: rSpringRank.optimize
+.. automodule:: regrank.optimize
     :members:
     :undoc-members:
     :show-inheritance:

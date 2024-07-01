@@ -1,17 +1,28 @@
-[![license](https://img.shields.io/badge/license-LGPL-green.svg?style=flat)](https://github.com/junipertcy/regrank/blob/main/LICENSE) [![PyPI version](https://img.shields.io/pypi/v/regrank.svg)](https://pypi.org/project/regrank/) [![PyPI downloads](https://img.shields.io/pypi/dm/regrank.svg?label=Pypi%20downloads)](https://pypi.org/project/regrank/) [![Build Status](https://github.com/junipertcy/regrank/actions/workflows/release.yml/badge.svg)](https://github.com/junipertcy/regrank/actions) [![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/ellerbrock/open-source-badges/)
+<p align="center">
+  <em><strong>regrank</strong> implements a suite of regularized models to infer the hierarchical structure in a directed network.</em>
+</p>
 
-**regrank** implements a collection of regularized, convex models (+solvers) that allow the inference of hierarchical structure in a directed network, which exists due to dominance, social status, or prestige. Specifically, this work leverages the time-varying structure and/or the node metadata present in the data set.
+<p align="center">
+  <a href="https://docs.netscied.tw/regrank/index.html" target="_blank"><strong>Docs</strong></a> ·
+  <a href="https://github.com/junipertcy/regrank/discussions" target="_blank"><strong>Discussions</strong></a> ·
+  <a href="https://docs.netscied.tw/regrank/index.html" target="_blank"><strong>Examples</strong></a>
+</p>
+
+<p align="center">
+<a href="https://pypi.org/project/regrank/"><img src="https://img.shields.io/pypi/v/regrank?color=%2334D063&label=pypi" /></a>
+<a href="https://pypi.org/project/regrank/"><img src="https://img.shields.io/pypi/dm/regrank.svg?label=Pypi%20downloads"/></a>
+<a href="https://github.com/junipertcy/regrank/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/regrank" /></a>
+</p>
+
+
 
 This is the software repository behind the paper:
 
 * Tzu-Chi Yen and Stephen Becker, *Regularized methods for efficient ranking in networks*, in preparation.
-* For full documentation, please visit [this site](https://docs.netscied.tw/regrank/index.html).
-* General Q&A, ideas, or other things, please visit [Discussions](https://github.com/junipertcy/regrank/discussions).
-* Software-related bugs, issues, or suggestions, please use [Issues](https://github.com/junipertcy/regrank/issues).
 
-## Installation
 
-**regrank** is available on PyPI. It also depends on `graph-tool`. We recommend using `conda` to manage packages.
+
+**RegRank** depends on `graph-tool`. We recommend using `conda` to manage packages.
 
 ```bash
 conda create --name regrank-dev -c conda-forge graph-tool
@@ -62,12 +73,12 @@ The result suggests that states such as `CA`, `WA`, or `AK` are significantly mo
 
 ## Data sets
 
-We have a companion repo—[regrank-data](https://github.com/junipertcy/regrank-data)—for data sets used in the paper. Which are:
+We have a companion repo, [regrank-data](https://github.com/junipertcy/regrank-data), which stores the data sets used in the paper. These data can be loaded via the  [regrank.datasets](https://junipertcy.github.io/regrank/datasets.html) submodule, and will load into a graph-tool graph object. See the [docs](https://docs.netscied.tw/regrank/index.html) for more description.
 
 * [PhD_exchange](https://github.com/junipertcy/regrank-data/tree/main/PhD_exchange)
 * [Parakeet](https://github.com/junipertcy/regrank-data/tree/main/parakeet)
-
-In addendum, we have provided the [regrank.datasets](https://junipertcy.github.io/regrank/datasets.html) submodule to load data sets hosted by other repositories, such as the [Netzschleuder](http://networkrepository.com/). See the docs for more information.
+* [Austrian internal migrations](https://networks.skewed.de/net/at_migrations): Network of migrations between municipalities in Austria, from 2002 to 2022.
+* [U.S. air traffic](https://networks.skewed.de/net/us_air_traffic): Yearly snapshots of flights among all commercial airports in the United States from 1990 to today.
 
 ## Development
 

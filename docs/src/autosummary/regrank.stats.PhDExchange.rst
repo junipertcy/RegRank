@@ -1,7 +1,7 @@
-﻿rSpringRank.stats.PhDExchange
-=============================
+﻿regrank.stats.PhDExchange
+=========================
 
-.. currentmodule:: rSpringRank.stats
+.. currentmodule:: regrank.stats
 
 .. autoclass:: PhDExchange
 

@@ -1,7 +1,7 @@
 I/O functions
 =============
 
-.. automodule:: rSpringRank.io
+.. automodule:: regrank.io
     :members:
     :undoc-members:
     :show-inheritance:

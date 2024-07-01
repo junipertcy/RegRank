@@ -1,7 +1,7 @@
-﻿rSpringRank.stats.CrossValidation
-=================================
+﻿regrank.stats.CrossValidation
+=============================
 
-.. currentmodule:: rSpringRank.stats
+.. currentmodule:: regrank.stats
 
 .. autoclass:: CrossValidation
 

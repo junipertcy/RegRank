@@ -1,7 +1,7 @@
 Datasets functions
 ==================
 
-.. automodule:: rSpringRank.datasets
+.. automodule:: regrank.datasets
     :members:
     :undoc-members:
     :show-inheritance:

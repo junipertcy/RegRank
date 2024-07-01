@@ -1,7 +1,7 @@
-﻿rSpringRank.stats.PeerInstitution
-=================================
+﻿regrank.stats.PeerInstitution
+=============================
 
-.. currentmodule:: rSpringRank.stats
+.. currentmodule:: regrank.stats
 
 .. autoclass:: PeerInstitution
 
