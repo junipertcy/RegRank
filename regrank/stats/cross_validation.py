@@ -319,3 +319,52 @@ class CrossValidation:
             print(f"(L) Minimum value: {min_value_L} at point: {min_point_L}")
             self.cv_alpha_a["annotated"][fold_id] = min_point_a
             self.cv_alpha_L["annotated"][fold_id] = min_point_L
+
+    @staticmethod
+    def _compute_score_per_tag(g_train, ranking, tag):
+        score = 0
+        _n_nodes = 0
+        _n_edges = 0
+
+        def _compute_utility_per_node(node, ranking, nbs_out, nbs_in):
+            utility = 0
+            for _vp in ranking[nbs_out]:
+                utility += np.exp(_vp)
+            for _vp in ranking[nbs_in]:
+                utility += np.exp(_vp)
+            return utility
+
+        for _i in g_train.vertices():
+            if g_train.vp["goi"][_i] != tag:
+                continue
+            else:
+                _n_nodes += 1
+            _i = _i.__int__()
+            nbs_out = g_train.get_out_neighbors(_i)
+            nbs_in = g_train.get_in_neighbors(_i)
+            utility = _compute_utility_per_node(_i, ranking, nbs_out, nbs_in)
+            ranking_i = ranking[_i]
+            for _j in nbs_out:  # i -> j
+                _n_edges += 1
+                _j = _j.__int__()
+                e = g_train.edge(_i, _j)
+                wt = g_train.edge_properties["weights"][e]
+                print(wt)
+                ranking_j = ranking[_j]
+                if ranking_j <= ranking_i:
+                    score += wt * np.exp(ranking_j) / np.sum(utility)
+                else:
+                    score -= wt * np.exp(ranking_j) / np.sum(utility)
+
+            for _j in nbs_in:  # j -> i
+                _n_edges += 1
+                _j = _j.__int__()
+                e = g_train.edge(_j, _i)
+                wt = g_train.edge_properties["weights"][e]
+                print(wt)
+                ranking_j = ranking[_j]
+                if ranking_j > ranking_i:
+                    score += wt * np.exp(ranking_j) / np.sum(utility)
+                else:
+                    score -= wt * np.exp(ranking_j) / np.sum(utility)
+        return score, (_n_nodes, _n_edges)

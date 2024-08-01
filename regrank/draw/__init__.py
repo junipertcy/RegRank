@@ -86,6 +86,8 @@ def plot_hist(summary, bin_count=30, legend=True, saveto=None):
         )
     if saveto is not None:
         plt.savefig(saveto, bbox_inches="tight")
+    print("test")
+    plt.show()
 
 
 def print_summary_table(summary, max_width=40):
