@@ -199,6 +199,7 @@ class sum_squared_loss_conj(Loss):
         Bt_b = self.B.T @ self.b
         self.Bt_B_invSqrt_Btb = self.Bt_B_invSqrt @ Bt_b
         self.Bt_B_invSqrt_ellt = self.Bt_B_invSqrt @ self.ell.T  # F-order
+        self.Bt_B_invSqrt_ellt = self.Bt_B_invSqrt_ellt.astype(np.float64, order="F")
 
         ell_Bt_B_inv = self.ell @ self.Bt_B_inv
         self.ell_BtB_inv_Bt_b = (ell_Bt_B_inv @ Bt_b).toarray(

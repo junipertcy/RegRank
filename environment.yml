@@ -5,10 +5,14 @@
 #
 name: regrank-dev
 channels:
-  - defaults
+  - pytorch
   - conda-forge
   - gurobi
+  - defaults
 dependencies:
+  - ax-platform
+  - pytorch
+  - torchvision
   - ipykernel
   - graph-tool
   - cvxpy
@@ -20,13 +24,14 @@ dependencies:
   - numba
   - scikit-learn
   - gurobi
-  - marimo  # for tutorials
+  - marimo>=0.8  # for tutorials
   - distinctipy
   # regrank.datasets dependency
   - pooch
   # For testing and benchmarking
   - pytest
   - scalene
+  - prettytable
   # For building docs
   - sphinx
   - myst-parser

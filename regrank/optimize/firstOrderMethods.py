@@ -375,7 +375,7 @@ class bookkeeper:
         return data
 
     def checkStoppingCondition(
-        self, x, xOld=None, iteration=np.Inf, gradient=None, stepsize=None
+        self, x, xOld=None, iteration=np.inf, gradient=None, stepsize=None
     ):
         stop = False
         if iteration > self.minIter:
@@ -513,7 +513,7 @@ def gradientDescent(
         maxIters = 1e4
     maxIters = int(maxIters)
     if restart is None:
-        restart = np.Inf
+        restart = np.inf
     else:
         restart = int(restart)
 

@@ -37,7 +37,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "!=3.11.0,>=3.10"
+python = ">=3.10,<3.11.0 || >3.11.0,<4.0"
 cvxpy = "^1.5.2"
 scipy = ">=1.10.0,<2.0.0"
 numpy = "1.26.4"
@@ -49,8 +49,8 @@ prettytable = ">=3.0.0,<4.0.0"
 pooch = "^1.8.2"
 matplotlib = ">=3.5.0,<4.0.0"
 zstandard = "^0.22.0"
-black = "^24.4.2"
-ruff = "^0.5.0"
+black = "^24.10.0"
+ruff = "^0.8.1"
 pytest = "^8.2.2"
 pre-commit = "^3.7.1"
 
@@ -60,7 +60,7 @@ sphinx = "^7.3.7"
 myst-parser = "^3.0.1"
 intersphinx-registry = "^0.2406.4"
 numpydoc = "^1.7.0"
-pytest = "^8.2.2"
+pytest = "^8.3.4"
 sphinx-markdown-tables = "^0.0.17"
 recommonmark = "^0.7.1"
 mathjax = "^0.1.2"
@@ -68,11 +68,28 @@ scalene = "^1.5.42"
 mypy = "^1.10.1"
 types-six = "^1.16.21"
 types-docutils = "^0.21.0.20240423"
+flake8-pyproject = "^1.2.3"
+poetry-plugin-export = "^1.8.0"
 
 
 [tool.black]
 skip-string-normalization = true
 line-length = 88
+target-version = ['py37']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
 
 [tool.ruff.lint]
 exclude = ["docs/extlinks_fancy.py"]
@@ -104,3 +121,21 @@ section-order = [
     "local-folder",
 ]
 known-first-party = []
+
+[tool.flake8]
+max-line-length = 88
+select = ["C", "E", "F", "W"]
+ignore = ["E203", "E266", "E501", "W503"]
+per-file-ignores = [
+    "**/__init__.py:F401,F403"
+]
+
+[tool.mypy]
+ignore_missing_imports = true
+
+
+[tool.pytest.ini_options]
+addopts = "-l"
+norecursedirs = ["doc", "tools"]
+junit_family = "xunit2"
+filterwarnings = ["error"]

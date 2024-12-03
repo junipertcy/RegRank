@@ -14,19 +14,18 @@
 <a href="https://github.com/junipertcy/regrank/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/regrank" /></a>
 </p>
 
-
-
 This is the software repository behind the paper:
 
-* Tzu-Chi Yen and Stephen Becker, *Regularized methods for efficient ranking in networks*, in preparation.
+- Tzu-Chi Yen and Stephen Becker, _Regularized methods for efficient ranking in networks_, in preparation.
 
+## Installation
 
-
-**RegRank** depends on `graph-tool`. We recommend using `conda` to manage packages.
+**RegRank** relies on [Ax](https://ax.dev/) for hyperparameter search. If you are using Mac, according to [Ax's docs](https://ax.dev/docs/installation.html), we recommend you [install PyTorch manually](https://pytorch.org/get-started/locally/#anaconda-1) before installing Ax, using the Anaconda package manager.
 
 ```bash
 conda create --name regrank-dev -c conda-forge graph-tool
 conda activate regrank-dev
+conda install pytorch torchvision -c pytorch  # OSX only (details below)
 pip install regrank
 ```
 
@@ -69,20 +68,20 @@ We provided a summary via `rr.print_summary_table(summary)`.
       | 4     |     1 |      4 | VI                                      | -0.072 | 0.0e+00 |
       +-------+-------+--------+-----------------------------------------+--------+---------+
 
-The result suggests that states such as `CA`, `WA`, or `AK` are significantly more *popular* than other states.
+The result suggests that states such as `CA`, `WA`, or `AK` are significantly more _popular_ than other states.
 
 ## Data sets
 
-We have a companion repo, [regrank-data](https://github.com/junipertcy/regrank-data), which stores the data sets used in the paper. These data can be loaded via the  [regrank.datasets](https://junipertcy.github.io/regrank/datasets.html) submodule, and will load into a graph-tool graph object. See the [docs](https://docs.netscied.tw/regrank/index.html) for more description.
+We have a companion repo, [regrank-data](https://github.com/junipertcy/regrank-data), which stores the data sets used in the paper. These data can be loaded via the [regrank.datasets](https://junipertcy.github.io/regrank/datasets.html) submodule, and will load into a graph-tool graph object. See the [docs](https://docs.netscied.tw/regrank/index.html) for more description.
 
-* [PhD_exchange](https://github.com/junipertcy/regrank-data/tree/main/PhD_exchange)
-* [Parakeet](https://github.com/junipertcy/regrank-data/tree/main/parakeet)
-* [Austrian internal migrations](https://networks.skewed.de/net/at_migrations): Network of migrations between municipalities in Austria, from 2002 to 2022.
-* [U.S. air traffic](https://networks.skewed.de/net/us_air_traffic): Yearly snapshots of flights among all commercial airports in the United States from 1990 to today.
+- [PhD_exchange](https://github.com/junipertcy/regrank-data/tree/main/PhD_exchange)
+- [Parakeet](https://github.com/junipertcy/regrank-data/tree/main/parakeet)
+- [Austrian internal migrations](https://networks.skewed.de/net/at_migrations): Network of migrations between municipalities in Austria, from 2002 to 2022.
+- [U.S. air traffic](https://networks.skewed.de/net/us_air_traffic): Yearly snapshots of flights among all commercial airports in the United States from 1990 to today.
 
 ## Development
 
-The library uses pytest to ensure correctness. The test suite depends on [mosek](https://www.mosek.com/) and [gurobi](https://www.gurobi.com/).
+The library uses `pytest` to ensure correctness. The test suite uses CVXPY's SCS solver to compare results. One may optionally use other solvers but they must be installed independently. See their [installation guide](https://www.cvxpy.org/install/index.html). Use `pre-commit run --all-files` for pre-commit checks.
 
 ## License
 

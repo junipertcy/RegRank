@@ -72,7 +72,7 @@ def compute(goi):
     ### CVXPY; PRIMAL ###
     primal_s = cp.Variable((g.num_vertices(), 1))
     problem = cp.Problem(cp.Minimize(sm_cvx.objective_fn_primal(primal_s, lambd=1)))
-    problem.solve(solver=cp.GUROBI, verbose=False)
+    problem.solve(solver=cp.SCS, verbose=False)
 
     ### CVXPY; DUAL ###
     n = (pde.num_dual_vars, 1)
@@ -80,7 +80,7 @@ def compute(goi):
     dual_v = cp.Variable(n)
     constraints = [cp.norm(dual_v, np.inf) <= tau]
     problem = cp.Problem(cp.Minimize(sm_cvx.objective_fn(dual_v)), constraints)
-    problem.solve(solver=cp.GUROBI, verbose=False)
+    problem.solve(solver=cp.SCS, verbose=False)
 
     ### CODE FOR BENCHMARKING ###
     ssl = sum_squared_loss()

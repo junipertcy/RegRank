@@ -195,7 +195,7 @@ class CrossValidation:
     def gen_all_train_validate_splits(self):
         for fold in range(self.n_folds):
             subgraph = gt.GraphView(self.g, efilt=self.main_cv_splits[fold])
-            self.gen_train_validate_splits(subgraph, self.n_reps, fold_id=fold)
+            self.gen_train_validate_splits(subgraph, fold_id=fold)
 
     def train_and_validate(self, model, fold_id, params=None, interp=None, **kwargs):
         self.model = model
@@ -349,7 +349,7 @@ class CrossValidation:
                 _j = _j.__int__()
                 e = g_train.edge(_i, _j)
                 wt = g_train.edge_properties["weights"][e]
-                print(wt)
+                # print(wt)
                 ranking_j = ranking[_j]
                 if ranking_j <= ranking_i:
                     score += wt * np.exp(ranking_j) / np.sum(utility)
@@ -361,7 +361,7 @@ class CrossValidation:
                 _j = _j.__int__()
                 e = g_train.edge(_j, _i)
                 wt = g_train.edge_properties["weights"][e]
-                print(wt)
+                # print(wt)
                 ranking_j = ranking[_j]
                 if ranking_j > ranking_i:
                     score += wt * np.exp(ranking_j) / np.sum(utility)

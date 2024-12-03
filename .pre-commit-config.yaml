@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: check-yaml
       - id: check-merge-conflict
@@ -8,11 +8,11 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: https://github.com/python-poetry/poetry
-    rev: "1.8.3"
+    rev: "1.8.0"
     hooks:
       - id: poetry-check
       - id: poetry-lock
-      - id: poetry-export
+      # - id: poetry-export
       - id: poetry-install
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
@@ -21,26 +21,28 @@ repos:
         args: [--profile, black]
         types: [python]
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.16.0
+    rev: v3.19.0
     hooks:
       - id: pyupgrade
         args: [--py37-plus]
   - repo: https://github.com/pycqa/flake8
-    rev: 7.1.0
+    rev: 7.1.1
     hooks:
       - id: flake8
+        additional_dependencies:
+          - flake8-pyproject
   - repo: https://github.com/psf/black
-    rev: 24.4.2
+    rev: 24.10.0
     hooks:
       - id: black
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.1
+    rev: v1.13.0
     hooks:
       - id: mypy
-        args: [--allow-redefinition]
+        args: [--allow-redefinition, "--config-file", "pyproject.toml"]
         exclude: docs/extlinks_fancy.py
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.0
+    rev: v0.8.1
     hooks:
       - id: ruff
         types_or: [python, pyi, jupyter]
