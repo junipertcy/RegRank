@@ -10,11 +10,15 @@ channels:
   - gurobi
   - defaults
 dependencies:
+  - python=3.12
+  - pre-commit
   - ax-platform
   - pytorch
   - torchvision
   - ipykernel
   - graph-tool
+  - graphviz
+  - python-graphviz
   - cvxpy
   - seaborn
   - bson

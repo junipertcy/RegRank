@@ -20,38 +20,37 @@
 
 from collections import defaultdict
 from itertools import combinations
-
-import matplotlib.pyplot as plt
-
-try:
-    import graph_tool.all as gt
-
-except ModuleNotFoundError:
-    print("graph_tool not found. Please install graph_tool.")
 from math import comb
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 try:
-    from pymongo import MongoClient
+    import graph_tool.all as gt
+except ModuleNotFoundError:
+    raise ImportError("graph_tool not found. Please install graph_tool.") from None
 
+
+try:
+    from pymongo import MongoClient
+except ModuleNotFoundError:
+    print("pymongo not found. Please install pymongo.")
+else:
     username = "tzuchi"
     password = "FI4opd12cjazqPL"
     port = "127.0.0.1:27017"
-    client: MongoClient = MongoClient(f"mongodb://{username}:{password}@{port}")
-except ModuleNotFoundError:
-    print("pymongo not found. Please install pymongo.")
+    client = MongoClient(f"mongodb://{username}:{password}@{port}")
 
 
 # TODO, see
 # https://graph-tool.skewed.de/static/doc/quickstart.html#sec-graph-filtering
 class Experiment:
     def __init__(self):
-        self.basic_stats = defaultdict(int)
-        pass
+        self.basic_stats = {}
 
-    def get_data(self):
-        pass
+    def get_data(self) -> gt.Graph:
+        # Placeholder implementation: return an empty graph
+        return gt.Graph()
 
     def draw(self):
         pass
@@ -75,10 +74,9 @@ class PhDExchange(Experiment):
         self.num_dual_vars = 0
         self.num_primal_vars = 0
         self.data_goi = None
-        self.basic_stats = defaultdict(int)
-        pass
+        self.basic_stats = {}
 
-    def get_data(self, goi="sector"):
+    def get_data(self, goi="sector") -> gt.Graph:
         """
         goi: which stratum (metadata of the nodes) that you are looking for?
 
@@ -102,9 +100,13 @@ class PhDExchange(Experiment):
 
         # np.random.seed(1)  # debug use
         for node in self.g.vertices():
-            pi_id = client["pnas2015188118"]["phd-exchange-nodes"].find_one(
+            pi_doc = client["pnas2015188118"]["phd-exchange-nodes"].find_one(
                 {"unitid": str(int(node) + 1)}
-            )["peer-institutions-nodes_id"]
+            )
+            if pi_doc is None:
+                self.g.vp["goi"][node] = "na"
+                continue
+            pi_id = pi_doc["peer-institutions-nodes_id"]
             if pi_id == -1:
                 self.g.vp["goi"][node] = "na"
 
@@ -117,7 +119,10 @@ class PhDExchange(Experiment):
 
             else:
                 data = client["peer-institutions"]["nodes"].find_one({"_id": pi_id})
-                self.g.vp["goi"][node] = data[goi]
+                if data is not None and goi in data:
+                    self.g.vp["goi"][node] = data[goi]
+                else:
+                    self.g.vp["goi"][node] = "na"
 
         # print(to_remove_in := np.where(self.g.get_in_degrees(list(self.g.vertices())) == 0))
         # print(to_remove_out := np.where(self.g.get_out_degrees(list(self.g.vertices())) == 0))
@@ -126,7 +131,7 @@ class PhDExchange(Experiment):
         )
 
         for node in to_remove_total[0]:
-            self.g.remove_vertex(node, fast=1)
+            self.g.remove_vertex(node, fast=True)
 
         # construct basic stats
         self.num_classes = len(set(np.array(list(self.g.vp["goi"]))))
@@ -144,7 +149,27 @@ class PhDExchange(Experiment):
         gt.graph_draw(self.g)
 
     def plot_hist(self, bin_count=20, legend=False):
+        if self.data_goi is None:
+            raise ValueError(
+                "self.data_goi is None. Please run _compute_collection_by_goi or compute_basic_stats first."
+            )
         hstack = []
+        if self.data_goi is None:
+            raise ValueError(
+                "self.data_goi is None. Please run _compute_collection_by_goi or compute_basic_stats first."
+            )
+        if self.data_goi is None:
+            raise ValueError(
+                "self.data_goi is None. Please run _compute_collection_by_goi or compute_basic_stats first."
+            )
+        if self.data_goi is None:
+            raise ValueError(
+                "self.data_goi is None. Please run _compute_collection_by_goi or compute_basic_stats first."
+            )
+        if self.data_goi is None:
+            raise ValueError(
+                "self.data_goi is None. Please run _compute_collection_by_goi or compute_basic_stats first."
+            )
         for key in self.data_goi.keys():
             hstack.append(self.data_goi[key])
 
@@ -154,7 +179,14 @@ class PhDExchange(Experiment):
             data = np.array(self.data_goi[key]).reshape(
                 -1,
             )
-            plt.hist(data, bins, label=key, alpha=0.5, edgecolor="white", linewidth=1.2)
+            plt.hist(
+                data,
+                bins.tolist(),
+                label=key,
+                alpha=0.5,
+                edgecolor="white",
+                linewidth=1.2,
+            )
 
         plt.ylabel("Frequency")
         plt.xlabel("SpringRank")
@@ -169,10 +201,16 @@ class PhDExchange(Experiment):
         elif dual_v is not None:
             # We take firstOrderMethods.py output directly
             dual_v = np.array(dual_v).reshape(-1, 1)
+            if sslc is None:
+                raise AttributeError("sslc must not be None when using dual_v.")
             output = sslc.dual2primal(dual_v)
         else:
             output = primal_s
         collection_by_goi = defaultdict(list)
+        if output is None:
+            raise ValueError(
+                "Output is None. Please provide valid dual_v or primal_s data."
+            )
         for idx, _c in enumerate(self.get_node_metadata()):
             collection_by_goi[_c].append(output[idx])
         self.data_goi = collection_by_goi
@@ -182,6 +220,11 @@ class PhDExchange(Experiment):
         self.basic_stats["deviation_dict"] = {}
         if self.data_goi is None:
             self._compute_collection_by_goi(sslc, dual_v=dual_v, primal_s=primal_s)
+
+        if self.data_goi is None:
+            self._compute_collection_by_goi(sslc, dual_v=dual_v, primal_s=primal_s)
+        if self.data_goi is None:
+            raise ValueError("self.data_goi is None. Please provide valid input data.")
 
         keys_comb = combinations(self.data_goi.keys(), 2)
         for key_pair in keys_comb:
@@ -217,10 +260,9 @@ class PeerInstitution(Experiment):
         self.num_dual_vars = 0
         self.num_primal_vars = 0
         self.data_goi = None
-        self.basic_stats = defaultdict(int)
-        pass
+        self.basic_stats = {}
 
-    def get_data(self, goi="sector"):
+    def get_data(self, goi="sector") -> gt.Graph:
         """
         goi: which stratum (metadata of the nodes) that you are looking at?
 
@@ -281,8 +323,11 @@ class PeerInstitution(Experiment):
             )
             if pi_id is None:
                 print({"unitid": str(inv_unitid2nodeid[node])})
-            self.g.vp["goi"][node] = pi_id[goi]
-            self.g.vp["instnm"][node] = pi_id["instnm"]
+                self.g.vp["goi"][node] = "na"
+                self.g.vp["instnm"][node] = "na"
+            else:
+                self.g.vp["goi"][node] = pi_id.get(goi, "na")
+                self.g.vp["instnm"][node] = pi_id.get("instnm", "na")
 
         return self.g
 
@@ -291,13 +336,18 @@ class PeerInstitution(Experiment):
         if self.data_goi is None:
             self._compute_collection_by_goi(sslc, dual_v=dual_v, primal_s=primal_s)
 
+        if self.data_goi is None:
+            raise ValueError("self.data_goi is None. Please provide valid input data.")
+
         keys_comb = combinations(self.data_goi.keys(), 2)
         for key_pair in keys_comb:
             key_0, key_1 = key_pair[0], key_pair[1]
             diff = np.mean(self.data_goi[key_0]) - np.mean(self.data_goi[key_1])
             if np.abs(diff) >= 1e-5:
+                self.basic_stats.setdefault("nonzero", 0)
                 self.basic_stats["nonzero"] += 1
             if key_0 != key_1:
+                self.basic_stats.setdefault("total", 0)
                 self.basic_stats["total"] += 1
             self.basic_stats["deviation_dict"][key_pair] = diff
 
@@ -305,9 +355,12 @@ class PeerInstitution(Experiment):
         for col_key in self.data_goi.keys():
             self.basic_stats["mean_dict"][col_key] = np.mean(self.data_goi[col_key])
 
-        self.basic_stats["sparsity_perc"] = (
-            self.basic_stats["nonzero"] / self.basic_stats["total"]
-        )
+        if self.basic_stats.get("total", 0) > 0:
+            self.basic_stats["sparsity_perc"] = (
+                self.basic_stats.get("nonzero", 0) / self.basic_stats["total"]
+            )
+        else:
+            self.basic_stats["sparsity_perc"] = 0.0
 
     def get_node_metadata(self):
         return np.array(list(self.g.vp["goi"]))
@@ -319,6 +372,10 @@ class PeerInstitution(Experiment):
 
     def plot_hist(self, bin_count=20, legend=False, saveto=None):
         hstack = []
+        if self.data_goi is None:
+            raise ValueError(
+                "self.data_goi is None. Please run _compute_collection_by_goi or compute_basic_stats first."
+            )
         for key in self.data_goi.keys():
             hstack.append(self.data_goi[key])
 
@@ -346,13 +403,17 @@ class PeerInstitution(Experiment):
         c18toMEANING["20"] = ("M:Small", "#91bfdb")  # Mean: -0.250
         c18toMEANING["22"] = ("B:Diverse", "#4575b4")  # Mean: -0.278
 
+        if self.data_goi is None:
+            raise ValueError(
+                "self.data_goi is None. Please run _compute_collection_by_goi or compute_basic_stats first."
+            )
         for key in self.data_goi.keys():
             data = np.array(self.data_goi[key]).reshape(
                 -1,
             )
             print(np.mean(data))
             plt.axvline(
-                np.mean(data),
+                float(np.mean(data)),
                 label=c18toMEANING[str(key)][0],
                 color=c18toMEANING[str(key)][1],
             )
@@ -361,7 +422,7 @@ class PeerInstitution(Experiment):
 
             plt.hist(
                 data,
-                bins,
+                bins.tolist(),
                 alpha=0.8,
                 edgecolor="white",
                 linewidth=1.2,
@@ -395,10 +456,16 @@ class PeerInstitution(Experiment):
         elif dual_v is not None:
             # We take firstOrderMethods.py output directly
             dual_v = np.array(dual_v).reshape(-1, 1)
+            if sslc is None:
+                raise AttributeError("sslc must not be None when using dual_v.")
             output = sslc.dual2primal(dual_v)
         else:
             output = primal_s
         collection_by_goi = defaultdict(list)
+        if output is None:
+            raise ValueError(
+                "Output is None. Please provide valid dual_v or primal_s data."
+            )
         for idx, _c in enumerate(self.get_node_metadata()):
             collection_by_goi[_c].append(output[idx])
         self.data_goi = collection_by_goi

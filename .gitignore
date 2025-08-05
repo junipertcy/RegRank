@@ -1,9 +1,13 @@
+# Mac-specific residue
+.DS_Store
+
 # scalene output
 profile.html
 profile.json
 
 # misc
 bin/
+data/
 deploy.sh
 examples/
 test-sdist/
@@ -186,3 +190,6 @@ cython_debug/
 # pixi environments
 .pixi
 *.egg-info
+# pixi environments
+.pixi/*
+!.pixi/config.toml
