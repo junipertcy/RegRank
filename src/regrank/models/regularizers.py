@@ -77,11 +77,11 @@ class same_mean_reg(Regularizer):
             float: 0 if in the constraint set, +inf otherwise
         """
         tol = 1e-8
-        return 0.0 if norm(theta, ord=np.inf) <= self.lambd + tol else np.infty
+        return 0.0 if norm(theta, ord=np.inf) <= self.lambd + tol else np.inf
 
     def evaluate_cvx(self, theta):
         return (
-            0.0 if cp.norm(theta / self.lambd, 1) <= 1 else np.infty
+            0.0 if cp.norm(theta / self.lambd, 1) <= 1 else np.inf
         )  # double check the ord
 
     def prox(self, theta, t):  # see LinfBall.py

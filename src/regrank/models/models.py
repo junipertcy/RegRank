@@ -28,7 +28,7 @@ from collections import defaultdict
 import cvxpy as cp
 import numpy as np
 import scipy.sparse.linalg
-from numpy.linalg import norm
+from numpy.linalg import norm, inv
 from scipy.optimize import brentq
 from scipy.sparse import SparseEfficiencyWarning, csr_matrix, spdiags
 from scipy.sparse.linalg import lsmr, lsqr
@@ -567,7 +567,138 @@ class SpringRank(BaseModel):
                     "First-order solver for Huber norm has not been not implemented. "
                     + "Please set explicitly that cvxpy=True."
                 )
+        elif self.method == "porder":
+            # This method does not learn new values for A, but instead prunes a
+            # fixed initial matrix `A_init` to be sparse by finding an optimal
+            # binary mask `M`. The goal is to solve min ||(M * A_init)x - b||^2.
+            # This is a combinatorial problem, solved here with a greedy heuristic.
+            if self.cvxpy:
+                raise NotImplementedError(
+                    "CVXPY is not suitable for this combinatorial pruning method."
+                )
+
+            # --- 1. Extract parameters from kwargs ---
+            # 'k' is the number of non-zero entries to keep in the upper triangle.
+            k_sparsity = kwargs.get("k", 10)
+            # 'lambda_x' is the L2 regularization (ridge penalty) on the vector x.
+            lambda_x = kwargs.get("lambda_x", 0.1)
+            # Optional: a custom target vector 'b'. If not provided, it defaults
+            # to the standard SpringRank formulation (k_out - k_in).
+            b_vec = kwargs.get("b_vec", None)
+
+            max_iters = kwargs.get("max_iters", 100)
+            tol = kwargs.get("tol", 1e-6)
+
+            # --- 2. Prepare inputs for the pruning algorithm ---
+            if isinstance(data, gt.Graph):
+                # We need a dense numpy array to work with
+                A_init = gt.adjacency(data).toarray()
+            elif isinstance(data, np.ndarray):
+                A_init = data
+            else:
+                raise TypeError(
+                    "Input data for 'porder' must be a graph-tool Graph or a NumPy array."
+                )
+
+            if b_vec is None:
+                # Default to the standard SpringRank 'b' vector
+                k_in = A_init.sum(axis=0)
+                k_out = A_init.sum(axis=1)
+                b_vec = k_out - k_in
+
+            # --- 3. Call the core pruning logic ---
+            primal_x, primal_A = self._prune_p_order(
+                A_init, b_vec, k_sparsity, lambda_x, max_iters, tol
+            )
+
+            # --- 4. Store results, following the class pattern ---
+            # This method produces both a pruned matrix and a rank vector
+            self.result["primal_A"] = primal_A
+            self.result["primal_x"] = primal_x
+
+            # For consistency with other methods, store 'x' in the 'primal' key
+            self.result["primal"] = primal_x
+
+            # Optionally compute and store the final objective function value
+            final_loss = (
+                0.5 * norm(primal_A @ primal_x - b_vec) ** 2
+                + 0.5 * lambda_x * norm(primal_x) ** 2
+            )
+            self.result["f_primal"] = final_loss
+
         else:
             raise NotImplementedError("Method not implemented.")
 
         return self.result
+
+    @staticmethod
+    def _ridge_regression(A, b, lam):
+        """Solves the Ridge Regression problem: (A'A + lambda*I)x = A'b."""
+        n = A.shape[1]
+        identity_matrix = np.eye(n)
+        try:
+            # Standard case
+            return inv(A.T @ A + lam * identity_matrix) @ (A.T @ b)
+        except np.linalg.LinAlgError:
+            # Fallback for singular matrices
+            return np.linalg.pinv(A.T @ A + lam * identity_matrix) @ (A.T @ b)
+
+    # This is the core logic for the 'porder' method
+    def _prune_p_order(self, A_init, b, k, lambda_x, max_iters, tol):
+        """
+        Prunes a fixed initial matrix by learning an optimal binary mask M.
+        The non-zero values of A_init are never changed.
+        """
+        # 1. Store the original matrix. It will NOT be modified.
+        #    Enforce symmetry and zero-diagonal on this base matrix.
+        A_orig = (A_init + A_init.T) / 2
+        np.fill_diagonal(A_orig, 0)
+
+        n = A_orig.shape[0]
+        x = np.zeros(n)
+
+        # 2. Initialize a binary mask. This is the only part of A that "learns".
+        mask = np.ones_like(A_orig)
+        np.fill_diagonal(mask, 0)
+
+        for it in range(max_iters):
+            # 3. Construct the current sparse A using the mask and ORIGINAL values.
+            A = mask * A_orig
+
+            # Step 1: Solve for x with the current sparse A
+            x_new = self._ridge_regression(A, b, lambda_x)
+
+            # Step 2: Use the gradient to get importance scores for the mask.
+            grad_A = 2 * (A @ x_new - b)[:, np.newaxis] @ x_new[np.newaxis, :]
+
+            # We only need to consider the upper triangle for selection
+            upper_tri_indices = np.triu_indices(n, 1)
+            importance_scores = np.abs(grad_A[upper_tri_indices])
+
+            # Determine the threshold to keep the top k scores
+            if k < len(importance_scores):
+                threshold = np.partition(importance_scores, -k)[-k]
+            else:
+                threshold = -1
+
+            # Create the new mask based on the top-k scores
+            new_mask = np.zeros_like(mask)
+            keep_mask = importance_scores >= threshold
+
+            row_indices, col_indices = upper_tri_indices
+            i_keep = row_indices[keep_mask]
+            j_keep = col_indices[keep_mask]
+
+            new_mask[i_keep, j_keep] = 1
+            new_mask = new_mask + new_mask.T  # Ensure symmetry
+
+            # Check for convergence
+            if np.allclose(new_mask, mask) and np.linalg.norm(x_new - x) < tol:
+                break
+
+            mask = new_mask
+            x = x_new
+
+        # 4. The final matrix is guaranteed to be a sub-matrix of A_orig.
+        A_final = mask * A_orig
+        return x, A_final

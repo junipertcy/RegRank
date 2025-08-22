@@ -89,7 +89,6 @@ class PhDExchange(Experiment):
             if tar != src:
                 self.g.add_edge(tar, src)
                 # self.g.add_edge(src, tar)   # old
-
         #     if np.random.random() < 0.1:
         #         self.g.add_edge(np.random.randint(231), np.random.randint(231))
 
