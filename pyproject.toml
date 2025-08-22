@@ -1,18 +1,16 @@
-
 [build-system]
-requires = ["poetry-core>=1.9.0"]
-build-backend = "poetry.core.masonry.api"
+# Use a standard, modern build backend like setuptools or hatchling
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
 
-[tool.poetry]
+[project]
 name = "regrank"
 version = "0.2.30"
 description = "Regularized methods for efficient ranking in networks"
-authors = ["Tzu-Chi Yen <tzuchi.yen@colorado.edu>"]
+authors = [{ name = "Tzu-Chi Yen", email = "tzuchi.yen@colorado.edu" }]
 license = "LGPL-3.0-or-later"
 readme = "README.md"
-homepage = "https://github.com/junipertcy/regrank"
-repository = "https://github.com/junipertcy/regrank"
-documentation = 'https://docs.netscied.tw/regrank/index.html'
+requires-python = ">=3.11,<3.13"
 keywords = [
     "network-analysis",
     "convex-optimization",
@@ -23,9 +21,8 @@ keywords = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPL-3.0-or-later)", # Explicit full name
     "Natural Language :: English",
-    "Operating System :: OS Independent", # More robust than listing each OS
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -33,58 +30,67 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
+
 # --- Core Dependencies ---
-[tool.poetry.dependencies]
-python = ">=3.11,<3.13" # Loosened lower bound
-cvxpy = "^1.5.2"
-scipy = "^1.10.0"
-numpy = "^1.26.4"
-numba = "^0.60.0"
-scikit-learn = "^1.5.0"
-distinctipy = "^1.3.4"
-prettytable = "^3.0.0"
-pooch = "^1.8.2"
-matplotlib = "^3.5.0"
-zstandard = "^0.22.0"
+# PEP 621 format: list of strings, not a table.
+dependencies = [
+    "cvxpy>=1.7.1",
+    "scipy>=1.16.1",
+    "numpy>=2.2.6",
+    "numba>=0.61.2",
+    "scikit-learn>=1.7.1",
+    "distinctipy>=1.3.4",
+    "prettytable>=3.16.0",
+    "pooch>=1.8.2",
+    "matplotlib>=3.10.5",
+    "zstandard>=0.24.0",
+]
+# Project URLs for PyPI display
+[project.urls]
+Homepage = "https://github.com/junipertcy/regrank"
+Repository = "https://github.com/junipertcy/regrank"
+Documentation = "https://docs.netscied.tw/regrank/index.html"
+
 
 # --- Development and Tooling Dependencies ---
-[tool.poetry.group.dev.dependencies]
-# Linting & Formatting
-black = "^24.10.0"
-ruff = "^0.8.1"
-mypy = "^1.10.1"
-pre-commit = "^3.7.1"
-
-# Testing
-pytest = "^8.2.2"
-pytest-docker = "^3.2.3"
-
-# Documentation
-sphinx = "^7.3.7"
-sphinx-rtd-theme = "^2.0.0"
-myst-parser = "^3.0.1"
-numpydoc = "^1.7.0"
-sphinx-markdown-tables = "^0.0.17"
-mathjax = "^0.1.2"
-intersphinx-registry = "^0.2406.4"
-types-docutils = "^0.21.0"
-
-# Interactive Development & Profiling
-marimo = "^0.6.24"
-scalene = "^1.5.42"
-poetry-plugin-export = "^1.8.0"
+[project.optional-dependencies]
+dev = [
+    # Linting & Formatting
+    "black>=25.1.0",
+    "ruff>=0.12.10",
+    "mypy>=1.17.1",
+    "pre-commit>=4.3.0",
+    # Testing
+    "pytest>=8.4.1",
+    "pytest-docker>=3.2.3",
+    # Documentation
+    "sphinx>=8.2.3",
+    "sphinx-rtd-theme>=3.0.2",
+    "myst-parser>=4.0.1",
+    "numpydoc>=1.9.0",
+    "sphinx-markdown-tables>=0.0.17",
+    "mathjax>=0.1.2",
+    "intersphinx-registry>=0.2501.23",
+    "types-docutils>=0.22.0.20250822",
+    # Interactive Development & Profiling
+    "marimo>=0.15.0",
+    "scalene>=1.5.53",
+]
 
 # --- Tool Configurations ---
 
-[tool.black]
-line-length = 88
-target-version = ["py311", "py312"]
-# No need for exclude, black's defaults are excellent.
+[tool.setuptools.packages.find]
+# Ensure setuptools finds your package correctly
+include = ["regrank*"]
+exclude = ["tests*"]
 
 [tool.ruff]
-# Same as Black
-line-length = 88
+# Inherit settings from the [tool.ruff.lint] and [tool.ruff.format] sections below
 target-version = "py311"
+
+[tool.ruff.format]
+# Recommended modern formatting setting
+preview = true
 
 [tool.ruff.lint]
 select = [
@@ -95,13 +101,17 @@ select = [
     "B",  # flake8-bugbear
     "C4", # flake8-comprehensions
     "UP", # pyupgrade
+    "S",  # bandit (security)
+    "PT", # pytest style
 ]
 ignore = [
-    "E501", # Handled by Black's line length
+    "E501", # Handled by Black/Ruff formatter
     "C901", # Allow complex functions (common in scientific code)
     "B008", # Do not complain about function calls as default arguments
+    "S101", # Ignore "assert" statements, which are fine in tests
 ]
-exclude = ["docs/extlinks_fancy.py"]
+# Keep your project-specific ignores
+per-file-ignores = { "tests/*" = ["S101"] }
 
 [tool.ruff.lint.isort]
 known-first-party = ["regrank", "tests"]
@@ -109,21 +119,24 @@ known-first-party = ["regrank", "tests"]
 [tool.mypy]
 ignore_missing_imports = true
 python_version = "3.11"
+# Add these for stricter type checking, inspired by graphrag
+warn_return_any = true
+warn_unused_configs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-v -ra"
+addopts = "-v -ra --strict-markers"
 filterwarnings = [
-    "error", # Treat all warnings as errors by default
-    # Explicitly ignore the ones you are handling
+    "error",
     "ignore:The 'SpringRankLegacy' class is deprecated:DeprecationWarning",
 ]
-norecursedirs = ["docs", "build", ".venv"]
+norecursedirs = ["docs", "build", ".venv", "dist"]
 junit_family = "xunit2"
 
+# The pixi config remains unchanged.
 [tool.pixi.workspace]
 channels = ["conda-forge"]
-platforms = ["osx-arm64", "linux-64", "win-64"] # Add common platforms
+platforms = ["osx-arm64", "linux-64", "win-64"]
 
 [tool.pixi.pypi-dependencies]
 regrank = { path = ".", editable = true }

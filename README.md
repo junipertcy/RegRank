@@ -81,7 +81,7 @@ We have a companion repo, [regrank-data](https://github.com/junipertcy/regrank-d
 
 ## Development
 
-The library uses `pytest` to ensure correctness. The test suite uses CVXPY's SCS solver to compare results. One may optionally use other solvers but they must be installed independently. See their [installation guide](https://www.cvxpy.org/install/index.html). Use `pre-commit run --all-files` for pre-commit checks.
+We use `pytest` to ensure the consistency and correctness during development. The test suite uses CVXPY's SCS solver to compare results. One may optionally use other solvers but they must be installed independently. See CVXPY's [installation guide](https://www.cvxpy.org/install/index.html). Use `pre-commit run --all-files` for pre-commit checks.
 
 ## License
 
