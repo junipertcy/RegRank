@@ -1,59 +1,34 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
 repos:
+  # General-purpose, language-agnostic hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
+      - id: check-added-large-files # Good practice to prevent committing large data files
       - id: check-yaml
       - id: check-merge-conflict
       - id: debug-statements
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
-  - repo: local
-    hooks:
-      - id: pixi-validate
-        name: pixi-validate
-        entry: pixi install
-        language: system
-        pass_filenames: false
-
-
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        args: [--profile, black]
-        types: [python]
-
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.0
-    hooks:
-      - id: pyupgrade
-        args: [--py37-plus]
-
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.1.1
-    hooks:
-      - id: flake8
-        additional_dependencies:
-          - flake8-pyproject
-
-  - repo: https://github.com/psf/black
-    rev: 24.10.0
-    hooks:
-      - id: black
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
-    hooks:
-      - id: mypy
-        args: [--allow-redefinition, "--config-file", "pyproject.toml"]
-        exclude: docs/extlinks_fancy.py
-
+  # Ruff for all linting and formatting
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.1
+    rev: v0.12.10
     hooks:
       - id: ruff
-        types_or: [python, pyi, jupyter]
-        args: [--fix]
+        name: ruff (lint)
+        args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
-        types_or: [python, pyi, jupyter]
+        name: ruff (format)
+
+  # Mypy for static type checking (Ruff does not do this)
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.17.1
+    hooks:
+      - id: mypy
+        # Use the config file for arguments instead of repeating them here
+        additional_dependencies: [
+            # Add any mypy plugins you might use, e.g., for numpy
+            "numpy"
+        ]

@@ -85,4 +85,7 @@ We use `pytest` to ensure the consistency and correctness during development. Th
 
 ## License
 
-**regrank** is open-source and licensed under the [GNU Lesser General Public License v3.0](https://www.gnu.org/licenses/lgpl-3.0.en.html).
+**regrank** is open-source and licensed under the [GNU Lesser General Public License v3.0](https://www.gnu.org/licenses/lgpl-3.0.en.html). This means that you are welcome to include this library in your own projects, whether they are open-source or proprietary. The main idea is to allow you to use the library's functionality freely, while ensuring that any improvements made directly to regrank itself are shared back with the community -- through a legal mechanism called ["weak copyleft"](https://fossa.com/blog/all-about-copyleft-licenses/).
+
+## Acknowledgments
+TCY wants to thank Perplexity.ai and [gemini-2.5-pro-preview-06-05](https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-pro).
