@@ -1,19 +1,19 @@
 import marimo
 
-__generated_with = "0.14.17"
+__generated_with = "0.15.0"
 app = marimo.App(width="full")
 
 
 @app.cell
 def _():
-    import sys
+    # import sys
 
-    sys.path.append('/Users/tzuchi/Documents/Workspace/regrank/')
-
+    # sys.path.append("/Users/tzuchi/Documents/Workspace/regrank/")
 
     import regrank as rr
+    from regrank.draw import plot_hist
     from regrank.models import SpringRank
-    from regrank.draw import plot_hist, print_summary_table
+
     return SpringRank, plot_hist, rr
 
 
@@ -75,7 +75,6 @@ def _(SpringRank, g):
     print(pruned_A)
     print("\nFinal Ranks x:")
     print(ranks_x)
-
     return (model,)
 
 

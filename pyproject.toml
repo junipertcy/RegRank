@@ -10,7 +10,7 @@ description = "Regularized methods for efficient ranking in networks"
 authors = [{ name = "Tzu-Chi Yen", email = "tzuchi.yen@colorado.edu" }]
 license = "LGPL-3.0-or-later"
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.11,<3.14"
 keywords = [
     "network-analysis",
     "convex-optimization",
@@ -140,3 +140,6 @@ platforms = ["osx-arm64", "linux-64", "win-64"]
 
 [tool.pixi.pypi-dependencies]
 regrank = { path = ".", editable = true }
+
+[tool.marimo.runtime]
+pythonpath = ["src"]

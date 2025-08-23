@@ -20,13 +20,30 @@ This is the software repository behind the paper:
 
 ## Installation
 
-**RegRank** relies on [Ax](https://ax.dev/) for hyperparameter search. If you are using Mac, according to [Ax's docs](https://ax.dev/docs/installation.html), we recommend you [install PyTorch manually](https://pytorch.org/get-started/locally/#anaconda-1) before installing Ax, using the Anaconda package manager.
+**RegRank** relies on powerful Python libraries with deep C++ dependencies, such as [Ax](https://ax.dev/) (ft. PyTorch & BoTorch, for hyperparameter search), [CVXPY](https://www.cvxpy.org/) (ft. OSQP/ECOS/SCS, for convex optimization), and [graph-tool](https://graph-tool.skewed.de/) (ft. BOOST & CGAL, for graph analysis). These packages cannot be installed by `pip` alone.
+
+Therefore, the recommended installation strategy is a hybrid approach:
+1.  **Use Conda** to create a stable environment and install these heavy, compiled dependencies.
+2.  **Use [uv](https://github.com/astral-sh/uv)** (a fast package manager written in Rust) to install `regrank` and its Python dependencies.
+
+We recommend [Miniforge](https://github.com/conda-forge/miniforge) or [Mambaforge](https://github.com/conda-forge/mambaforge) for a minimal, `conda-forge`-centric setup. Follow these steps to install and use `regrank` as a library in your projects.
 
 ```bash
-conda create --name regrank-dev -c conda-forge graph-tool
-conda activate regrank-dev
-conda install pytorch torchvision -c pytorch  # OSX only (details below)
-pip install regrank
+# 1. Create a conda environment with Python and graph-tool.
+#    The conda-forge channel provides the most reliable build for graph-tool.
+conda create -n regrank -c conda-forge python=3.12 graph-tool
+
+# 2. Activate the new environment.
+conda activate regrank
+
+# 3. Install PyTorch (a dependency for Ax) and CVXPY.
+#    Using conda for PyTorch is more robust, especially on macOS.
+conda install pytorch torchvision -c pytorch
+conda install cvxpy -c conda-forge
+
+# 4. Install regrank using uv.
+#    (If you don't have uv yet: pip install uv)
+uv pip install regrank
 ```
 
 ## Example
@@ -79,9 +96,13 @@ We have a companion repo, [regrank-data](https://github.com/junipertcy/regrank-d
 - [Austrian internal migrations](https://networks.skewed.de/net/at_migrations): Network of migrations between municipalities in Austria, from 2002 to 2022.
 - [U.S. air traffic](https://networks.skewed.de/net/us_air_traffic): Yearly snapshots of flights among all commercial airports in the United States from 1990 to today.
 
-## Development
+## Development Notes
 
-We use `pytest` to ensure the consistency and correctness during development. The test suite uses CVXPY's SCS solver to compare results. One may optionally use other solvers but they must be installed independently. See CVXPY's [installation guide](https://www.cvxpy.org/install/index.html). Use `pre-commit run --all-files` for pre-commit checks.
+We use `pytest` to ensure the consistency and correctness during development. The test suite uses CVXPY's SCS solver to compare results. One may optionally use other solvers but they must be installed independently. See CVXPY's [installation guide](https://www.cvxpy.org/install/index.html).
+
+If you want to contribute to `regrank` (thank you!), we recommend setting the enviroment by (1) Git clone this repository and navigate into it; (2) Follow Steps 1 to 3 as above; (3) Install regrank in "editable" mode along with its development dependencies, via `uv pip install -e .`.
+
+Use `pre-commit run --all-files` for pre-commit checks.
 
 ## License
 
