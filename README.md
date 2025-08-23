@@ -1,5 +1,5 @@
 <p align="center">
-  <em><strong>regrank</strong> implements a suite of regularized models to infer the hierarchical structure in a directed network.</em>
+  <em><strong>regrank</strong> aims to implement a suite of regularized models to infer the hierarchical structure in a directed network.</em>
 </p>
 
 <p align="center">
@@ -29,17 +29,17 @@ Therefore, the recommended installation strategy is a hybrid approach:
 We recommend [Miniforge](https://github.com/conda-forge/miniforge) or [Mambaforge](https://github.com/conda-forge/mambaforge) for a minimal, `conda-forge`-centric setup. Follow these steps to install and use `regrank` as a library in your projects.
 
 ```bash
-# 1. Create a conda environment with Python and graph-tool.
-#    The conda-forge channel provides the most reliable build for graph-tool.
-conda create -n regrank -c conda-forge python=3.12 graph-tool
+# 1. In a new dir, create a conda environment with Python.
+conda create -n regrank -c conda-forge python=3.11
 
 # 2. Activate the new environment.
 conda activate regrank
 
-# 3. Install PyTorch (a dependency for Ax) and CVXPY.
+# 3. Install PyTorch (a dependency for Ax), CVXPY, and graph-tool.
 #    Using conda for PyTorch is more robust, especially on macOS.
 conda install pytorch torchvision -c pytorch
 conda install cvxpy -c conda-forge
+conda install graph-tool -c conda-forge
 
 # 4. Install regrank using uv.
 #    (If you don't have uv yet: pip install uv)

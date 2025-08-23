@@ -44,6 +44,7 @@ dependencies = [
     "pooch>=1.8.2",
     "matplotlib>=3.10.5",
     "zstandard>=0.24.0",
+    "marimo>=0.15.0",
 ]
 # Project URLs for PyPI display
 [project.urls]
