@@ -28,10 +28,11 @@ from collections import defaultdict
 import cvxpy as cp
 import numpy as np
 import scipy.sparse.linalg
-from numpy.linalg import norm, inv
+from numpy.linalg import norm
 from scipy.optimize import brentq
 from scipy.sparse import SparseEfficiencyWarning, csr_matrix, spdiags
 from scipy.sparse.linalg import lsmr, lsqr
+from sklearn.linear_model import Lasso
 from sklearn.neighbors import NearestNeighbors
 
 from ..io import cast2sum_squares_form, cast2sum_squares_form_t
@@ -567,64 +568,99 @@ class SpringRank(BaseModel):
                     "First-order solver for Huber norm has not been not implemented. "
                     + "Please set explicitly that cvxpy=True."
                 )
-        elif self.method == "porder":
-            # This method does not learn new values for A, but instead prunes a
-            # fixed initial matrix `A_init` to be sparse by finding an optimal
-            # binary mask `M`. The goal is to solve min ||(M * A_init)x - b||^2.
-            # This is a combinatorial problem, solved here with a greedy heuristic.
-            if self.cvxpy:
-                raise NotImplementedError(
-                    "CVXPY is not suitable for this combinatorial pruning method."
-                )
+        elif self.method == "dictionary":
+            # Model parameters
+            n_components = kwargs.get("n_components", 10)  # K
+            gamma = kwargs.get("gamma", 10.0)  # Reconstruction weight
+            lambda_sparse = kwargs.get(
+                "lambda_sparse", 0.12
+            )  # Sparsity weight for codes
 
-            # --- 1. Extract parameters from kwargs ---
-            # 'k' is the number of non-zero entries to keep in the upper triangle.
-            k_sparsity = kwargs.get("k", 10)
-            # 'lambda_x' is the L2 regularization (ridge penalty) on the vector x.
-            lambda_x = kwargs.get("lambda_x", 0.1)
-            # Optional: a custom target vector 'b'. If not provided, it defaults
-            # to the standard SpringRank formulation (k_out - k_in).
-            b_vec = kwargs.get("b_vec", None)
+            # Solver parameters
+            max_iters_outer = kwargs.get("max_iters_outer", 20)
+            tol_outer = kwargs.get("tol_outer", 1e-8)
+            N = data.num_vertices()
 
-            max_iters = kwargs.get("max_iters", 100)
-            tol = kwargs.get("tol", 1e-6)
-
-            # --- 2. Prepare inputs for the pruning algorithm ---
-            if isinstance(data, gt.Graph):
-                # We need a dense numpy array to work with
-                A_init = gt.adjacency(data).toarray()
-            elif isinstance(data, np.ndarray):
-                A_init = data
-            else:
-                raise TypeError(
-                    "Input data for 'porder' must be a graph-tool Graph or a NumPy array."
-                )
-
-            if b_vec is None:
-                # Default to the standard SpringRank 'b' vector
-                k_in = A_init.sum(axis=0)
-                k_out = A_init.sum(axis=1)
-                b_vec = k_out - k_in
-
-            # --- 3. Call the core pruning logic ---
-            primal_x, primal_A = self._prune_p_order(
-                A_init, b_vec, k_sparsity, lambda_x, max_iters, tol
+            # Initialize ranks `s` using standard SpringRank.
+            s = (
+                SpringRankLegacy(alpha=self.alpha)
+                .fit(data)["rank"]
+                .astype(np.float64)
+                .reshape(-1, 1)
             )
 
-            # --- 4. Store results, following the class pattern ---
-            # This method produces both a pruned matrix and a rank vector
-            self.result["primal_A"] = primal_A
-            self.result["primal_x"] = primal_x
+            # Initialize Dictionary D with a FIXED DC component as the first atom.
+            D = np.random.randn(N, n_components)
+            D[:, 0] = 1.0 / np.sqrt(N)  # The fixed DC atom (normalized)
 
-            # For consistency with other methods, store 'x' in the 'primal' key
-            self.result["primal"] = primal_x
+            # Initialize the learnable part of the dictionary
+            D_learnable = D[:, 1:]
+            D_learnable -= D_learnable.mean(axis=0, keepdims=True)
+            D_learnable /= np.linalg.norm(D_learnable, axis=0, keepdims=True)
+            D[:, 1:] = D_learnable
 
-            # Optionally compute and store the final objective function value
-            final_loss = (
-                0.5 * norm(primal_A @ primal_x - b_vec) ** 2
-                + 0.5 * lambda_x * norm(primal_x) ** 2
+            # Initialize sparse codes A (alpha)
+            A = np.zeros((n_components, 1))
+
+            # Get SpringRank quadratic form
+            B_sr, b_sr_dense = cast2sum_squares_form(data, alpha=self.alpha)
+            b_sr = b_sr_dense.toarray(order="C")
+
+            # Pre-compute for s-update
+            AtA = B_sr.T @ B_sr
+            Atb = B_sr.T @ b_sr
+
+            print(
+                f"Starting Fixed DC-Atom Dictionary Learning SpringRank with {max_iters_outer} iterations..."
             )
-            self.result["f_primal"] = final_loss
+            for i in range(max_iters_outer):
+                s_old = s.copy()
+
+                # --- STEP A: Update Sparse Codes A (alpha) ---
+                # Objective: min_A (gamma/2)*||s - DA||_F^2 + lambda_sparse*||A||_1
+                lasso = Lasso(
+                    alpha=lambda_sparse / gamma, fit_intercept=False, max_iter=100
+                )
+                lasso.fit(D, s)
+                A = lasso.coef_.reshape(-1, 1)
+
+                # --- STEP B: Update Dictionary D ---
+                # [MODIFIED] Use the K-SVD-like helper to update D while keeping d_0 fixed.
+                D, A = self._update_dict_with_fixed_dc(s, D, A)
+
+                # --- STEP C: Update Ranks s ---
+                # Objective: min_s 1/2*||B@s - b||^2 + gamma/2*||s - DA||^2
+                reconstruction = D @ A
+                system_matrix = AtA + gamma * scipy.sparse.eye(N, format="csr")
+                system_vector = Atb + gamma * reconstruction
+
+                s_new, exit_code = scipy.sparse.linalg.bicgstab(
+                    system_matrix, system_vector, x0=s.flatten()
+                )
+                if exit_code != 0:
+                    print(
+                        f"Warning: bicgstab exited with code {exit_code} at iteration {i}"
+                    )
+
+                s = s_new.reshape(-1, 1)
+
+                change = np.linalg.norm(s - s_old) / (np.linalg.norm(s_old) + 1e-9)
+                if i > 0 and change < tol_outer:
+                    print(
+                        f"DLSR converged at iteration {i + 1} with relative change: {change:.6f}"
+                    )
+                    break
+
+            self.result["primal"] = s.flatten()
+            self.result["dictionary"] = D
+            self.result["codes"] = A.flatten()
+
+            # The global mean is captured by the first code coefficient and the DC atom.
+            self.result["global_mean_reconstructed"] = (
+                D[:, 0] * A[0, 0]
+            ).mean() * np.sqrt(N)
+
+            self.result["reconstruction_error"] = np.linalg.norm(s - (D @ A))
 
         else:
             raise NotImplementedError("Method not implemented.")
@@ -632,73 +668,59 @@ class SpringRank(BaseModel):
         return self.result
 
     @staticmethod
-    def _ridge_regression(A, b, lam):
-        """Solves the Ridge Regression problem: (A'A + lambda*I)x = A'b."""
-        n = A.shape[1]
-        identity_matrix = np.eye(n)
-        try:
-            # Standard case
-            return inv(A.T @ A + lam * identity_matrix) @ (A.T @ b)
-        except np.linalg.LinAlgError:
-            # Fallback for singular matrices
-            return np.linalg.pinv(A.T @ A + lam * identity_matrix) @ (A.T @ b)
-
-    # This is the core logic for the 'porder' method
-    def _prune_p_order(self, A_init, b, k, lambda_x, max_iters, tol):
+    def _update_dict_with_fixed_dc(S, D_in, A):
         """
-        Prunes a fixed initial matrix by learning an optimal binary mask M.
-        The non-zero values of A_init are never changed.
+        Updates the dictionary D using a K-SVD-like process, keeping the first
+        atom (DC component) fixed.
+
+        Args:
+            S (np.ndarray): The rank matrix (N, num_signals).
+            D_in (np.ndarray): The current dictionary (N, K).
+            A (np.ndarray): The sparse code matrix (K, num_signals).
+            gamma (float): Reconstruction weight.
+
+        Returns:
+            np.ndarray: The updated dictionary D (N, K).
         """
-        # 1. Store the original matrix. It will NOT be modified.
-        #    Enforce symmetry and zero-diagonal on this base matrix.
-        A_orig = (A_init + A_init.T) / 2
-        np.fill_diagonal(A_orig, 0)
+        D = D_in.copy()
+        # Iterate through each atom, skipping the first (DC) atom
+        for k in range(1, D.shape[1]):
+            # Find the signals that use this atom
+            omega_k = np.where(A[k, :] != 0)[0]
+            if len(omega_k) == 0:
+                # Atom is not used, no need to update
+                continue
 
-        n = A_orig.shape[0]
-        x = np.zeros(n)
+            # --- K-SVD Update Step ---
+            # 1. Calculate the residual error if this atom were removed.
+            # E_k = S - sum_{j!=k} d_j * a_j
+            D_without_k = np.delete(D, k, axis=1)
+            A_without_k = np.delete(A, k, axis=0)
+            E_k = S - D_without_k @ A_without_k
 
-        # 2. Initialize a binary mask. This is the only part of A that "learns".
-        mask = np.ones_like(A_orig)
-        np.fill_diagonal(mask, 0)
+            # Restrict the error matrix to only the signals that use atom k
+            E_k_restricted = E_k[:, omega_k]
 
-        for it in range(max_iters):
-            # 3. Construct the current sparse A using the mask and ORIGINAL values.
-            A = mask * A_orig
+            # 2. Use SVD to find the best replacement for d_k and a_k.
+            # E_k_restricted ≈ d_k * a_k_restricted
+            try:
+                # Perform Singular Value Decomposition
+                u, s_val, vt = np.linalg.svd(E_k_restricted, full_matrices=False)
 
-            # Step 1: Solve for x with the current sparse A
-            x_new = self._ridge_regression(A, b, lambda_x)
+                # The best rank-1 approximation is the first singular vector/value pair.
+                # Update the dictionary atom d_k with the first left singular vector.
+                d_k_new = u[:, 0]
 
-            # Step 2: Use the gradient to get importance scores for the mask.
-            grad_A = 2 * (A @ x_new - b)[:, np.newaxis] @ x_new[np.newaxis, :]
+                # Update the corresponding sparse codes for this atom.
+                a_k_new_restricted = s_val[0] * vt[0, :]
 
-            # We only need to consider the upper triangle for selection
-            upper_tri_indices = np.triu_indices(n, 1)
-            importance_scores = np.abs(grad_A[upper_tri_indices])
+                # Update the dictionary and the sparse code matrix
+                D[:, k] = d_k_new
+                A[k, omega_k] = a_k_new_restricted
 
-            # Determine the threshold to keep the top k scores
-            if k < len(importance_scores):
-                threshold = np.partition(importance_scores, -k)[-k]
-            else:
-                threshold = -1
+            except np.linalg.LinAlgError:
+                # SVD can fail if the residual matrix is zero or ill-conditioned.
+                # In this case, we just skip the update for this atom.
+                continue
 
-            # Create the new mask based on the top-k scores
-            new_mask = np.zeros_like(mask)
-            keep_mask = importance_scores >= threshold
-
-            row_indices, col_indices = upper_tri_indices
-            i_keep = row_indices[keep_mask]
-            j_keep = col_indices[keep_mask]
-
-            new_mask[i_keep, j_keep] = 1
-            new_mask = new_mask + new_mask.T  # Ensure symmetry
-
-            # Check for convergence
-            if np.allclose(new_mask, mask) and np.linalg.norm(x_new - x) < tol:
-                break
-
-            mask = new_mask
-            x = x_new
-
-        # 4. The final matrix is guaranteed to be a sub-matrix of A_orig.
-        A_final = mask * A_orig
-        return x, A_final
+        return D, A

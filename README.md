@@ -100,7 +100,7 @@ We have a companion repo, [regrank-data](https://github.com/junipertcy/regrank-d
 
 We use `pytest` to ensure the consistency and correctness during development. The test suite uses CVXPY's SCS solver to compare results. One may optionally use other solvers but they must be installed independently. See CVXPY's [installation guide](https://www.cvxpy.org/install/index.html).
 
-If you want to contribute to `regrank` (thank you!), we recommend setting the enviroment by (1) Git clone this repository and navigate into it; (2) Follow Steps 1 to 3 as above; (3) Install regrank in "editable" mode along with its development dependencies, via `uv pip install -e .`.
+If you want to contribute to `regrank` (thank you!), we recommend setting the enviroment by (1) Git clone this repository and navigate into it; (2) Follow Steps 1 to 3 as above; (3) Install regrank in "editable" mode along with its development dependencies, via `uv pip install -e ".[dev]"`.
 
 Use `pre-commit run --all-files` for pre-commit checks.
 

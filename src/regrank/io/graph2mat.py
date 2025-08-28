@@ -61,7 +61,7 @@ def cast2sum_squares_form_t(
             raise TypeError(
                 "Please make sure that A is of type `csr_matrix` or `csc_matrix` of scipy.sparse."
             )
-        for ind in zip(*find(A)):
+        for ind in zip(*find(A), strict=False):
             i, j, val = ind[0], ind[1], ind[2]
             if i == j:
                 continue
@@ -169,7 +169,7 @@ def cast2sum_squares_form(data, alpha, regularization=True):  # TODO: this is sl
     14     2  2
     15     3  3
     """
-    if type(data) is gt.Graph or type(data) is gt.GraphView:
+    if type(data) in [gt.Graph, gt.GraphView]:
         A = gt.adjacency(data)
     elif type(data) is csc_matrix:
         A = data
@@ -198,7 +198,7 @@ def cast2sum_squares_form(data, alpha, regularization=True):  # TODO: this is sl
     )
     counter_B = counter_b = 0
     # data_iter = iter(A.data)
-    for ind in zip(*find(A)):
+    for ind in zip(*find(A), strict=False):
         i, j, val = ind[0], ind[1], ind[2]
         if i == j:
             # logger.warning(

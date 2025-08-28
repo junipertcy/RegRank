@@ -54,10 +54,10 @@ Documentation = "https://docs.netscied.tw/regrank/index.html"
 
 
 # --- Development and Tooling Dependencies ---
+# TODO: check if they are all needed
 [project.optional-dependencies]
 dev = [
     # Linting & Formatting
-    "black>=25.1.0",
     "ruff>=0.12.10",
     "mypy>=1.17.1",
     "pre-commit>=4.3.0",
@@ -144,3 +144,8 @@ regrank = { path = ".", editable = true }
 
 [tool.marimo.runtime]
 pythonpath = ["src"]
+
+[dependency-groups]
+dev = [
+    "mlflow>=3.3.1",
+]
