@@ -178,6 +178,11 @@ class SpringRankLegacy:
         # pass
         # self.change_base_model(BaseModel)
 
+    def fit_from_adjacency(self, adj):
+        """Fit SpringRank directly from adjacency matrix."""
+        ranks = self.compute_sr(adj, self.alpha)
+        return {"rank": ranks.reshape(-1, 1)}
+
     def fit_scaled(self, data, scale=0.75):
         if type(data) is gt.Graph:
             adj = gt.adjacency(data)
@@ -193,7 +198,7 @@ class SpringRankLegacy:
         return info
 
     def fit(self, data):
-        if type(data) is gt.Graph:
+        if type(data) in [gt.Graph, gt.GraphView]:
             adj = gt.adjacency(data)
         else:
             raise NotImplementedError
@@ -321,13 +326,14 @@ class SpringRankLegacy:
 
 
 class SpringRank(BaseModel):
-    def __init__(
-        self,
-        method="legacy",
-    ):
+    def __init__(self, method="legacy", **kwargs):
         self.alpha = 0
         self.lambd = 0
         self.method = method
+        if method == "annotated":
+            self.goi = kwargs.get(
+                "goi", None
+            )  # Will check for this parameter when fit is called
         self.result = {}
         self.sslc = None
         self.fo_setup = {}
@@ -362,14 +368,14 @@ class SpringRank(BaseModel):
                 self.result["primal"] = primal
                 self.result["f_primal"] = problem.value
             elif self.bicgstab:
-                self.result["primal"] = SpringRankLegacy(alpha=self.alpha).fit(data)[
-                    "rank"
-                ]
+                self.result["primal"] = (
+                    SpringRankLegacy(alpha=self.alpha).fit(data)["rank"].reshape(-1)
+                )
             else:
                 B, b = cast2sum_squares_form(data, alpha=self.alpha)
                 b_array = b.toarray(order="C")
                 _lsmr = lsmr(B, b_array)[:1][0]
-                self.result["primal"] = _lsmr.reshape(-1, 1)
+                self.result["primal"] = _lsmr.reshape(-1)
 
                 # compute primal functional value
                 def f_all_primal(x):
@@ -384,8 +390,24 @@ class SpringRank(BaseModel):
                 raise NotImplementedError("Not implemented for method='annotated'.")
             else:
                 goi = kwargs.get("goi", None)
+                if goi is None:
+                    raise ValueError(
+                        "The 'goi' parameter is required for method='annotated'."
+                    )
+
                 self.sslc = sum_squared_loss_conj()
-                self.sslc.setup(data, alpha=self.alpha, goi=goi)
+                try:
+                    self.sslc.setup(data, alpha=self.alpha, goi=goi)
+                except Exception as e:
+                    print(f"Error during setup: {e}")
+                    raise
+
+                # Verify sslc is properly initialized before defining lambda functions
+                if self.sslc is None or not hasattr(self.sslc, "evaluate"):
+                    raise AttributeError(
+                        "self.sslc.setup did not properly initialize the 'evaluate' method"
+                    )
+
                 self.fo_setup["f"] = lambda x: self.sslc.evaluate(x)
                 self.fo_setup["grad"] = lambda x: self.sslc.prox(x)
                 self.fo_setup["prox"] = lambda x, t: same_mean_reg(
@@ -558,9 +580,13 @@ class SpringRank(BaseModel):
                         abstol=1e-13,
                         max_iters=1e5,
                     )
-                primal = primal_s.value.reshape(
-                    -1,
-                )
+                if primal_s.value is None:
+                    print("Warning: CVXPY solver did not return a solution.")
+                    primal = np.zeros(data.num_vertices())
+                else:
+                    primal = primal_s.value.reshape(
+                        -1,
+                    )
                 self.result["primal"] = primal
                 self.result["f_primal"] = problem.value
             else:
@@ -573,7 +599,7 @@ class SpringRank(BaseModel):
             n_components = kwargs.get("n_components", 10)  # K
             gamma = kwargs.get("gamma", 10.0)  # Reconstruction weight
             lambda_sparse = kwargs.get(
-                "lambda_sparse", 0.12
+                "lambda_sparse", 0.1
             )  # Sparsity weight for codes
 
             # Solver parameters
@@ -661,11 +687,210 @@ class SpringRank(BaseModel):
             ).mean() * np.sqrt(N)
 
             self.result["reconstruction_error"] = np.linalg.norm(s - (D @ A))
+        elif self.method == "branch_constrained":
+            # Extract parameters
+            branch_constraints = kwargs.get("branch_constraints", [])
+            if not branch_constraints:
+                raise ValueError(
+                    "branch_constraints parameter is required for method='branch_constrained'."
+                )
 
+            # Optimization parameters with better defaults
+            max_iter = kwargs.get("max_iter", 5000)
+            tol = kwargs.get("tol", 1e-8)
+            initial_step_size = kwargs.get("step_size", 1e-3)
+            use_armijo = kwargs.get("use_armijo", True)
+
+            # Get adjacency matrix
+            if type(data) in [gt.Graph, gt.GraphView]:
+                adj = gt.adjacency(data).toarray()
+            else:
+                adj = data
+
+            N = adj.shape[0]
+
+            # Initialize with standard SpringRank solution (better starting point)
+            r = SpringRankLegacy(alpha=self.alpha).compute_sr(adj, self.alpha)
+
+            # Precompute SpringRank system matrices
+            k_in = adj.sum(axis=0)
+            k_out = adj.sum(axis=1)
+            L = np.diag(k_in + k_out) - (adj + adj.T)
+            L_reg = L + self.alpha * np.eye(N)
+            b_sr = k_out - k_in
+
+            # Validate constraints
+            for i_m, j_m, d_m in branch_constraints:
+                if type(i_m) is not int or type(j_m) is not int:
+                    raise ValueError(
+                        f"i_m or j_m must be integers, got i_m={i_m}, j_m={j_m}."
+                    )
+                if not (0 <= i_m < N and 0 <= j_m < N):
+                    raise ValueError(
+                        f"Invalid node indices in constraint ({i_m}, {j_m}, {d_m})"
+                    )
+                if d_m not in [-1, 1]:
+                    raise ValueError(f"Decision value d_m must be +1 or -1, got {d_m}")
+
+            print(
+                f"Starting branch-constrained SpringRank with {len(branch_constraints)} constraints..."
+            )
+
+            step_size = initial_step_size
+
+            # Proximal gradient descent with Armijo line search
+            for iteration in range(max_iter):
+                r_old = r.copy()
+
+                # Compute full gradient
+                grad = self._compute_branch_gradient(
+                    r, L_reg, b_sr, branch_constraints, self.lambd
+                )
+
+                # Check for numerical issues
+                if not np.all(np.isfinite(grad)):
+                    print(
+                        f"Gradient contains non-finite values at iteration {iteration}"
+                    )
+                    step_size *= 0.5
+                    continue
+
+                # Armijo line search for adaptive step size
+                if use_armijo:
+                    step_size = self._armijo_line_search(
+                        r, grad, L_reg, b_sr, branch_constraints, self.lambd, step_size
+                    )
+
+                # Gradient descent update
+                r_new = r - step_size * grad
+
+                # Numerical stability: clip extreme values
+                r_new = np.clip(r_new, -1e3, 1e3)
+
+                # Check convergence
+                change = np.linalg.norm(r_new - r_old) / (np.linalg.norm(r_old) + 1e-9)
+
+                if iteration % 500 == 0:
+                    obj_val = self._evaluate_branch_objective(
+                        r_new, L_reg, b_sr, branch_constraints, self.lambd
+                    )
+                    if np.isfinite(obj_val):
+                        print(
+                            f"Iteration {iteration}: objective = {obj_val:.6f}, change = {change:.6e}"
+                        )
+                    else:
+                        print(f"Iteration {iteration}: numerical instability detected")
+                        step_size *= 0.1  # Reduce step size drastically
+
+                r = r_new
+
+                if change < tol:
+                    print(
+                        f"Converged at iteration {iteration} with relative change: {change:.6e}"
+                    )
+                    break
+
+            # Store results
+            self.result["primal"] = r
+            self.result["branch_constraints"] = branch_constraints
+            self.result["final_objective"] = self._evaluate_branch_objective(
+                r, L_reg, b_sr, branch_constraints, self.lambd
+            )
+
+            # Analyze constraint satisfaction
+            constraint_analysis = []
+            for i_m, j_m, d_m in branch_constraints:
+                diff = r[i_m] - r[j_m]
+                violation = max(0, -d_m * diff)
+                satisfied = d_m * diff >= 0
+                constraint_analysis.append({
+                    "constraint": (i_m, j_m, d_m),
+                    "difference": diff,
+                    "violation_magnitude": violation,
+                    "satisfied": satisfied,
+                })
+
+            self.result["constraint_analysis"] = constraint_analysis
         else:
             raise NotImplementedError("Method not implemented.")
 
         return self.result
+
+    def _compute_branch_gradient(self, r, L_reg, b_sr, branch_constraints, lambd):
+        """Compute gradient with numerical stability checks."""
+        # SpringRank gradient
+        grad = L_reg @ r - b_sr
+
+        # Add branch constraint penalty gradients
+        for i_m, j_m, d_m in branch_constraints:
+            diff = r[i_m] - r[j_m]
+            violation = max(0, -d_m * diff)
+
+            if violation > 0:
+                # Gradient of max(0, -d_m * (r_i - r_j))²
+                grad_penalty = -2 * lambd * d_m * violation
+                # Apply with numerical stability
+                if abs(grad_penalty) < 1e6:  # Prevent extremely large gradients
+                    grad[i_m] += grad_penalty
+                    grad[j_m] -= grad_penalty
+
+        return grad
+
+    def _armijo_line_search(
+        self, r, grad, L_reg, b_sr, branch_constraints, lambd, initial_step
+    ):
+        """Armijo line search for adaptive step sizing."""
+        c1 = 1e-4  # Armijo constant
+        beta = 0.5  # Step reduction factor
+        max_backtracks = 20
+
+        current_obj = self._evaluate_branch_objective(
+            r, L_reg, b_sr, branch_constraints, lambd
+        )
+        grad_norm_sq = np.dot(grad, grad)
+
+        step_size = initial_step
+
+        for _ in range(max_backtracks):
+            r_new = r - step_size * grad
+            r_new = np.clip(r_new, -1e3, 1e3)  # Numerical stability
+
+            new_obj = self._evaluate_branch_objective(
+                r_new, L_reg, b_sr, branch_constraints, lambd
+            )
+
+            # Armijo condition
+            if new_obj <= current_obj - c1 * step_size * grad_norm_sq:
+                return step_size
+
+            step_size *= beta
+
+        return step_size
+
+    def _evaluate_branch_objective(self, r, L_reg, b_sr, branch_constraints, lambd):
+        """Evaluate objective with overflow protection."""
+        try:
+            # SpringRank term
+            residual = L_reg @ r - b_sr
+            springrank_term = 0.5 * np.dot(residual, residual)
+
+            # Branch constraint penalty terms
+            penalty_term = 0.0
+            for i_m, j_m, d_m in branch_constraints:
+                diff = r[i_m] - r[j_m]
+                violation = max(0, -d_m * diff)
+                penalty_term += violation**2
+
+            total_obj = springrank_term + lambd * penalty_term
+
+            # Return inf if numerical issues
+            if not np.isfinite(total_obj):
+                return np.inf
+
+            return total_obj
+
+        except (OverflowError, FloatingPointError):
+            return np.inf
 
     @staticmethod
     def _update_dict_with_fixed_dc(S, D_in, A):

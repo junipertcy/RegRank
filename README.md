@@ -30,16 +30,15 @@ We recommend [Miniforge](https://github.com/conda-forge/miniforge) or [Mambaforg
 
 ```bash
 # 1. In a new dir, create a conda environment with Python.
-conda create -n regrank -c conda-forge python=3.11
+conda create -n regrank -c conda-forge python=3.11 -y
 
 # 2. Activate the new environment.
 conda activate regrank
 
 # 3. Install PyTorch (a dependency for Ax), CVXPY, and graph-tool.
 #    Using conda for PyTorch is more robust, especially on macOS.
-conda install pytorch torchvision -c pytorch
-conda install cvxpy -c conda-forge
-conda install graph-tool -c conda-forge
+conda install -c pytorch pytorch torchvision
+conda install -c conda-forge graph-tool python-graphviz cvxpy sage ecos # docs todo
 
 # 4. Install regrank using uv.
 #    (If you don't have uv yet: pip install uv)

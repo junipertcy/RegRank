@@ -81,7 +81,7 @@ def compute(goi):
     ### CVXPY; PRIMAL ###
     primal_s = cp.Variable((g.num_vertices(), 1))
     problem = cp.Problem(cp.Minimize(sm_cvx.objective_fn_primal(primal_s, lambd=1)))
-    problem.solve(solver=cp.SCS, verbose=False)
+    problem.solve(solver=cp.ECOS, verbose=False)  # You can use ECOS or CLARABEL.
 
     ### CVXPY; DUAL ###
     n = (pde.num_dual_vars, 1)
@@ -89,7 +89,7 @@ def compute(goi):
     dual_v = cp.Variable(n)
     constraints = [cp.norm(dual_v, np.inf) <= tau]
     problem = cp.Problem(cp.Minimize(sm_cvx.objective_fn(dual_v)), constraints)
-    problem.solve(solver=cp.SCS, verbose=False)
+    problem.solve(solver=cp.ECOS, verbose=False)
 
     ### CODE FOR BENCHMARKING ###
     ssl = sum_squared_loss()
@@ -124,7 +124,7 @@ def test_c18basic(mongo_service):
         assert our_dual is None
         assert cvx_dual is None
         # You could also add an assertion for cvx_prim if needed.
-        
+
     # Case 2: The output is not None, so proceed with numerical comparison.
     else:
         # This block will only run for non-empty graphs where you get
@@ -147,7 +147,7 @@ def test_sector(mongo_service):
         assert our_dual is None
         assert cvx_dual is None
         # You could also add an assertion for cvx_prim if needed.
-        
+
     # Case 2: The output is not None, so proceed with numerical comparison.
     else:
         # This block will only run for non-empty graphs where you get
@@ -170,7 +170,7 @@ def test_stabbr(mongo_service):
         assert our_dual is None
         assert cvx_dual is None
         # You could also add an assertion for cvx_prim if needed.
-        
+
     # Case 2: The output is not None, so proceed with numerical comparison.
     else:
         # This block will only run for non-empty graphs where you get
