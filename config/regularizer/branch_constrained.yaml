@@ -1,0 +1,6 @@
+# @package _global_
+regularizer:
+  name: branch_constrained
+  constraints: []
+  use_armijo: true
+  initial_step_size: 1e-3

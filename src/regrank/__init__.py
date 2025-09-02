@@ -19,10 +19,9 @@
 from __future__ import annotations
 
 import importlib
-import sys
-import platform
 import pathlib
-from typing import TYPE_CHECKING, Any
+import platform
+from typing import Any
 
 # Version resolution: prefer installed package metadata; during local dev, optionally
 # read pyproject.toml if available.
@@ -31,16 +30,12 @@ try:
 except ImportError:  # pragma: no cover
     importlib_metadata = None  # type: ignore[assignment]
 
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    try:
-        import tomli as tomllib
-    except ImportError:
-        tomllib = None
+import tomllib
 
 __title__ = "regrank"
-__description__ = "Regularized methods for efficient ranking in networks (SpringRank and variants)."
+__description__ = (
+    "Regularized methods for efficient ranking in networks (SpringRank and variants)."
+)
 __copyright__ = "Copyright (C) 2023-2025 Tzu-Chi Yen"
 __license__ = "LGPL-3.0-or-later"
 __author__ = "Tzu-Chi Yen"
@@ -87,10 +82,9 @@ def _resolve_version() -> str:
             with pyproject_path.open("rb") as f:
                 pyproject_data = tomllib.load(f)
             # Try PEP 621 (project.version) or Poetry (tool.poetry.version)
-            version = (
-                pyproject_data.get("project", {}).get("version")
-                or pyproject_data.get("tool", {}).get("poetry", {}).get("version")
-            )
+            version = pyproject_data.get("project", {}).get(
+                "version"
+            ) or pyproject_data.get("tool", {}).get("poetry", {}).get("version")
             if version:
                 return str(version)
 
@@ -108,10 +102,6 @@ def __getattr__(name: str) -> Any:
     if name in _submodules:
         return importlib.import_module(f".{name}", __name__)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-if TYPE_CHECKING:
-    from . import datasets, draw, io, models, stats
 
 
 def __dir__() -> list[str]:
@@ -141,7 +131,9 @@ def show_config() -> None:
 
     u = platform.uname()
     print("\nPlatform information:")
-    print(f"  python:     {platform.python_version()} ({platform.python_implementation()})")
+    print(
+        f"  python:     {platform.python_version()} ({platform.python_implementation()})"
+    )
     print(f"  system:     {u.system} ({u.release})")
     print(f"  machine:    {u.machine}")
 
@@ -152,4 +144,3 @@ def show_config() -> None:
     else:
         for name, version in dep_versions.items():
             print(f"  {name:<12}{version}")
-

@@ -60,6 +60,7 @@ Documentation = "https://docs.netscied.tw/regrank/index.html"
 # TODO: check if they are all needed
 [project.optional-dependencies]
 dev = [
+    "mlflow>=3.3.2",
     # Linting & Formatting
     "ruff>=0.12.10",
     "mypy>=1.17.1",
@@ -70,6 +71,7 @@ dev = [
     # Documentation
     "sphinx>=8.2.3",
     "sphinx-rtd-theme>=3.0.2",
+    "sphinx-autoapi>=3.6.0",
     "myst-parser>=4.0.1",
     "numpydoc>=1.9.0",
     "sphinx-markdown-tables>=0.0.17",
@@ -79,6 +81,7 @@ dev = [
     # Interactive Development & Profiling
     "marimo>=0.15.2",
     "scalene>=1.5.54",
+    "recommonmark>=0.7.1",
 ]
 
 # --- Tool Configurations ---
@@ -115,9 +118,12 @@ ignore = [
     "S101", # Ignore "assert" statements, which are fine in tests
     "F403", # sage needs it before I can use Poset. FIX IT as TODO.
     "S105", # I know there's a hard-coded pwd. FIX IT as TODO.
+    "S311", # this library is not for security/crypto uses.
 ]
+
 # Keep your project-specific ignores
-per-file-ignores = { "tests/*" = ["S101"] }
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["regrank", "tests"]
@@ -130,9 +136,7 @@ warn_return_any = true
 warn_unused_configs = true
 
 [tool.pytest.ini_options]
-pythonpath = [
-  "src"
-]
+pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "-v -ra --strict-markers"
 filterwarnings = [
@@ -156,8 +160,3 @@ regrank = { path = ".", editable = true }
 
 [tool.marimo.runtime]
 pythonpath = ["src"]
-
-[dependency-groups]
-dev = [
-    "mlflow>=3.3.1",
-]

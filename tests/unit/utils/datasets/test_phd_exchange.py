@@ -2,12 +2,11 @@ from math import comb
 
 import numpy as np
 
-from regrank.io.graph2mat import compute_ell
-from regrank.models.cvx import cp, same_mean_cvx
-from regrank.models.firstOrderMethods import gradientDescent
-from regrank.models.losses import sum_squared_loss, sum_squared_loss_conj
-from regrank.models.regularizers import same_mean_reg
-from regrank.stats.experiments import PhDExchange
+from regrank.core import sum_squared_loss, sum_squared_loss_conj
+from regrank.regularizers import same_mean_reg
+from regrank.solvers import cp, gradientDescent, same_mean_cvx
+from regrank.utils.graph2mat import compute_ell
+from regrank.utils.stats.experiments import PhDExchange
 
 # import gurobipy as gp
 # HOW TO SUPPRESS GUROBI OUTPUT (Set parameter Username)?

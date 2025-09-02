@@ -1,8 +1,9 @@
 import numpy as np
 import pytest
 
-import regrank as rr
-from regrank.models.cvx import cp, legacy_cvx
+from regrank.core import SpringRankLegacy
+from regrank.solvers import cp, legacy_cvx
+from regrank.utils.datasets import random_graph, small_graph
 
 
 def compute(g, alpha):
@@ -14,7 +15,7 @@ def compute(g, alpha):
 
     v_cvx_output = primal_s.value.reshape(-1, 1)
 
-    sr = rr.models.SpringRankLegacy(alpha=alpha)
+    sr = SpringRankLegacy(alpha=alpha)
 
     result = sr.fit(g)
     bicgstab_output = result["rank"]
@@ -27,10 +28,11 @@ def test_small_graph():
         DeprecationWarning,
         match=(
             "The 'SpringRankLegacy' class is deprecated and will be removed "
-            "in a future version. Please use 'SpringRank' instead."
+            "in a future version. Please use 'regrank.SpringRank' with "
+            "regularizer=legacy instead."
         ),
     ):
-        v_cvx_output, bicgstab_output = compute(rr.datasets.small_graph(), alpha)
+        v_cvx_output, bicgstab_output = compute(small_graph(), alpha)
 
     print(v_cvx_output, bicgstab_output)
     assert np.isclose(v_cvx_output, bicgstab_output, atol=1e-3).all()
@@ -43,8 +45,9 @@ def test_random_graph_10_times():
             DeprecationWarning,
             match=(
                 "The 'SpringRankLegacy' class is deprecated and will be removed "
-                "in a future version. Please use 'SpringRank' instead."
+                "in a future version. Please use 'regrank.SpringRank' with "
+                "regularizer=legacy instead."
             ),
         ):
-            v_cvx_output, bicgstab_output = compute(rr.datasets.random_graph(), alpha)
+            v_cvx_output, bicgstab_output = compute(random_graph(), alpha)
         assert np.isclose(v_cvx_output, bicgstab_output, atol=1e-3).all()

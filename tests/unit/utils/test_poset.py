@@ -1,33 +1,11 @@
 from collections import Counter
 
 import numpy as np
-import pymongo
 import pytest
 
 # Try to import the main module. If it fails, pytest will skip all tests.
 # This assumes your code is saved in a file named `poset.py`.
 poset = pytest.importorskip("regrank.utils.poset")
-
-# in tests/conftest.py
-
-
-@pytest.fixture(scope="session")
-def mongo_service():
-    print("--- ENTERING mongo_service fixture ---")
-    client = None  # Initialize client to None
-    try:
-        # Replace with your actual connection URL
-        auth_url = "mongodb://localhost:27017"
-        client = pymongo.MongoClient(auth_url, serverSelectionTimeoutMS=1000)
-
-        # The ismaster command is cheap and does not require auth.
-        client.admin.command("ismaster")
-        print("--> MongoDB is responsive! Handing over to tests.")
-        yield client
-    finally:
-        if client:
-            print("<-- Closing MongoDB connection. ---")
-            client.close()
 
 
 # --- Fixtures for test data ---

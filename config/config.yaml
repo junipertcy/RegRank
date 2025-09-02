@@ -1,0 +1,10 @@
+defaults:
+  - regularizer: legacy
+  - _self_
+
+alpha: 1.0
+lambd: 1.0
+solver:
+  max_iter: 5000
+  tol: 1e-8
+  step_size: 1e-3
