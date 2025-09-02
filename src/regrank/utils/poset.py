@@ -5,7 +5,6 @@ from collections.abc import Iterable, Sequence
 from typing import cast
 
 import numpy as np
-from sage.all import *
 from sage.combinat.posets.posets import Poset
 
 try:
