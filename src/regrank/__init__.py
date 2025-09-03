@@ -2,7 +2,7 @@
 #
 # regrank -- Regularized methods for efficient ranking in networks
 #
-# Copyright (C) 2023-2025 Tzu-Chi Yen <tzuchi.yen@colorado.edu>
+# Copyright (C) 2023-2025 Tzu-Chi Yen <tcy@inferweave.com>
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -30,7 +30,10 @@ try:
 except ImportError:  # pragma: no cover
     importlib_metadata = None  # type: ignore[assignment]
 
+
 import tomllib
+
+from .core import SpringRank
 
 __title__ = "regrank"
 __description__ = (
@@ -39,15 +42,16 @@ __description__ = (
 __copyright__ = "Copyright (C) 2023-2025 Tzu-Chi Yen"
 __license__ = "LGPL-3.0-or-later"
 __author__ = "Tzu-Chi Yen"
-__author_email__ = "tzuchi.yen@colorado.edu"
+__author_email__ = "tcy@inferweave.com"
 __url__ = "https://github.com/junipertcy/regrank"
 
 
 # Submodules that we lazily expose at the top-level
-_submodules: tuple[str, ...] = ("datasets", "io", "optimize", "stats", "draw")
+_submodules: tuple[str, ...] = ("datasets", "utils")
 
 
 # Public API: submodules plus selected top-level helpers and metadata
+# Type annotation
 __all__: list[str] = [
     # Metadata
     "__version__",
@@ -58,11 +62,13 @@ __all__: list[str] = [
     "__url__",
     "__license__",
     "__copyright__",
-    # Submodules
-    *_submodules,
     # Helpers
     "show_config",
+    # Add the class name to the public API
+    "SpringRank",
 ]
+# Extend with submodules
+__all__.extend(_submodules)
 
 
 def _resolve_version() -> str:

@@ -36,8 +36,11 @@ def generate_poset_from_graph(dag: gt.Graph) -> gt.Graph:
 
 
 def generate_dag(
-    num_vertices: int, num_edges: int | None = None, request: str | None = None
-) -> gt.Graph:
+    num_vertices: int,
+    num_edges: int | None = None,
+    request: str | None = None,
+    seed: int | None = 69,
+) -> tuple[gt.Graph, dict[int, int]]:
     """
     Generate a Directed Acyclic Graph (DAG) with flexible structure.
 
@@ -64,6 +67,7 @@ def generate_dag(
 
     g: gt.Graph = gt.Graph(directed=True)
     g.add_vertex(num_vertices)
+    np.random.seed(seed)
 
     # Establish a random topological sort for all generation methods
     nodes: np.ndarray = np.arange(num_vertices)

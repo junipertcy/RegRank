@@ -80,7 +80,7 @@ def compute(goi):
     ### CVXPY; PRIMAL ###
     primal_s = cp.Variable((g.num_vertices(), 1))
     problem = cp.Problem(cp.Minimize(sm_cvx.objective_fn_primal(primal_s, lambd=1)))
-    problem.solve(solver=cp.ECOS, verbose=False)  # You can use ECOS or CLARABEL.
+    problem.solve(solver=cp.ECOS, verbose=False)  # You can also use SCS or CLARABEL.
 
     ### CVXPY; DUAL ###
     n = (pde.num_dual_vars, 1)

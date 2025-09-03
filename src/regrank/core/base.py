@@ -6,11 +6,11 @@ from typing import Any
 import graph_tool.all as gt
 import numpy as np
 import scipy
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from scipy.optimize import brentq
 from scipy.sparse import csr_matrix, spdiags
 
-from ..regularizers import RegularizerFactory, zero_reg
+from ..regularizers import BaseRegularizer, RegularizerFactory, zero_reg
 from ..utils.clustering import cluster_1d_array
 
 logger = logging.getLogger(__name__)
@@ -58,24 +58,71 @@ class BaseModel:
 
 
 class SpringRank(BaseModel):
+    """
+    A class to compute SpringRank, a regularized ranking method for networks.
+    """
+
     def __init__(self, cfg: DictConfig):
-        self.regularizer = RegularizerFactory.create(cfg.regularizer)
+        """
+        Initializes the SpringRank object with a configuration.
+
+        Args:
+            cfg: A DictConfig object containing model and solver parameters.
+        """
+        self.cfg = cfg
+        self.regularizer: BaseRegularizer = RegularizerFactory.create(cfg.regularizer)
         self.result: dict[str, Any] = {}
 
-    def fit(self, data, **kwargs) -> dict[str, Any]:
-        """Main fitting method - delegates to specific regularizers."""
-        logger.info(f"Fitting with regularizer: {self.cfg.regularizer.name}")
+    def fit(self, data: Any, **kwargs) -> dict[str, Any]:
+        """
+        Main fitting method that delegates to a specific regularizer.
 
-        # Merge config with runtime kwargs
+        This method computes the ranks based on the provided data and configuration.
+        Runtime parameters can be passed as keyword arguments to override the
+        initial configuration for this specific run.
+
+        Args:
+            data: The graph data to be ranked (e.g., a graph_tool.Graph).
+            **kwargs: Runtime parameters to override the base configuration.
+                      For example, `alpha=0.5` or `solver_max_iter=10000`.
+
+        Returns:
+            A dictionary containing the results, typically including the 'primal' ranks.
+        """
+        logger.info(f"Fitting with regularizer: {self.regularizer}")
+
+        # Merge the initial config with any runtime kwargs
         run_cfg = self._merge_runtime_config(kwargs)
 
-        # Delegate to specific regularizer
+        # Delegate the fitting process to the selected regularizer
         self.result = self.regularizer.fit(data, run_cfg)
         return self.result
 
-    def _merge_runtime_config(self, kwargs: dict) -> DictConfig:
-        """Merge Hydra config with runtime parameters."""
-        # Implementation details...
+    def _merge_runtime_config(self, kwargs: dict[str, Any]) -> DictConfig:
+        """
+        Merges the base Hydra config with runtime keyword arguments.
+
+        If no kwargs are provided, it returns the original configuration.
+        Otherwise, it creates a new configuration object with the overrides.
+
+        Args:
+            kwargs: A dictionary of runtime parameters.
+
+        Returns:
+            A new DictConfig object with the merged parameters.
+        """
+        if not kwargs:
+            return self.cfg
+
+        # Create a mutable copy of the base config
+        merged_cfg = OmegaConf.to_container(self.cfg, resolve=True)
+
+        # Merge runtime kwargs into the copied config
+        # This allows for nested dot notation like "solver.max_iter"
+        override_cfg = OmegaConf.from_dotlist([f"{k}={v}" for k, v in kwargs.items()])
+        merged_cfg = OmegaConf.merge(merged_cfg, override_cfg)
+
+        return merged_cfg
 
 
 class SpringRankLegacy:

@@ -36,7 +36,9 @@ class LegacyRegularizer(BaseRegularizer):
 
     def __init__(self, cfg: DictConfig):
         super().__init__(cfg)
-        # The legacy solver methods are grouped in a helper class for clarity
+        self.name = cfg.name
+        # Store the solver method from the init config
+        self.solver_method = cfg.solver_method
         self.legacy_solvers = SpringRankLegacy()
 
     def fit(self, data: gt.Graph, cfg: DictConfig) -> dict[str, Any]:
@@ -51,33 +53,43 @@ class LegacyRegularizer(BaseRegularizer):
             A dictionary containing the primal solution (rankings) and,
             if applicable, the final objective value.
         """
-        solver_method = cfg.regularizer.solver_method
-        logger.info(f"Fitting Legacy SpringRank using solver: {solver_method}")
+        # Use the solver method stored on the instance
+        logger.info(f"Fitting Legacy SpringRank using solver: {self.solver_method}")
 
-        if solver_method == "cvxpy":
+        # The 'cfg' passed here should be the top-level one containing 'alpha', etc.
+        if self.solver_method == "cvxpy":
             return self._fit_cvxpy(data, cfg)
-        elif solver_method == "bicgstab":
+        elif self.solver_method == "bicgstab":
             return self._fit_bicgstab(data, cfg)
-        elif solver_method == "lsmr":
+        elif self.solver_method == "lsmr":
             return self._fit_lsmr(data, cfg)
         else:
             raise ValueError(
-                f"Unknown solver_method '{solver_method}' for LegacyRegularizer."
+                f"Unknown solver_method '{self.solver_method}' for LegacyRegularizer."
             )
+
+    # In regrank/regularizers/legacy.py
 
     def _fit_cvxpy(self, data: gt.Graph, cfg: DictConfig) -> dict[str, Any]:
         """Solves the SpringRank problem using CVXPY."""
         if cp is None:
             raise ImportError("CVXPY is required to use the 'cvxpy' solver.")
 
+        # Get the CVXPY backend from the config. Defaults to None, which
+        # tells CVXPY to use its default solver.
+        cvxpy_backend = cfg.solver.get("backend", None)
+        if cvxpy_backend:
+            logger.info(f"Using CVXPY backend: {cvxpy_backend}")
+
         v_cvx = legacy_cvx(data, alpha=cfg.alpha)
         primal_s = cp.Variable((data.num_vertices(), 1))
         problem = cp.Problem(cp.Minimize(v_cvx.objective_fn_primal(primal_s)))
-        problem.solve(verbose=cfg.solver.get("verbose", False))
+        # Pass the selected backend to the solve method.
+        problem.solve(solver=cvxpy_backend, verbose=cfg.solver.get("verbose", False))
 
         if primal_s.value is None:
             logger.warning(
-                "CVXPY solver did not return a solution. Returning a zero vector."
+                f"CVXPY solver ({cvxpy_backend or 'default'}) did not return a solution."
             )
             primal = np.zeros(data.num_vertices())
         else:
