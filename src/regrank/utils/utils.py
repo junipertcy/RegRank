@@ -255,7 +255,7 @@ def namedgraph_to_bt_matrix(named_graph, default_rank=0.0) -> csc_matrix:
         data.append(p_j_beats_i)
 
     # Create and return the sparse matrix
-    bt_matrix = coo_matrix((data, (rows, cols)), shape=(N, N)).tocsc()
+    bt_matrix = csc_matrix((data, (rows, cols)), shape=(N, N))
     return bt_matrix
 
 
@@ -314,9 +314,7 @@ def D_operator(s):
     return output
 
 
-def D_operator_reg_t_sparse(a, s):
-    if type(a) is not csr_matrix:
-        raise TypeError("Please use a `csr_matrix` of scipy.sparse.")
+def D_operator_reg_t_sparse(a: csr_matrix, s):
     n = a.shape[0]
     output_t = np.zeros(n, dtype=np.float64)  # if we avoid the zero rows
 
@@ -326,6 +324,8 @@ def D_operator_reg_t_sparse(a, s):
             k = n * i + j - i - 1
         elif i > j:
             k = n * i + j - i
+        else:
+            continue
 
         output_t[i] += (a[i, j] ** 0.5) * s[k]
         output_t[j] -= (a[i, j] ** 0.5) * s[k]
@@ -350,9 +350,7 @@ def D_operator_reg_t(a, s):
     return output_t
 
 
-def D_operator_reg_sparse(a, s):
-    if type(a) is not csr_matrix:
-        raise TypeError("Please use a `csr_matrix` of scipy.sparse.")
+def D_operator_reg_sparse(a: csr_matrix, s):
     n = a.shape[0]
     output = np.zeros(n**2 - n, dtype=np.float64)  # if we avoid the zero rows
     for ind in zip(*a.nonzero(), strict=False):
@@ -361,6 +359,8 @@ def D_operator_reg_sparse(a, s):
             k = n * i + j - i - 1
         elif i > j:
             k = n * i + j - i
+        else:
+            continue
         output[k] = (a[i, j] ** 0.5) * (s[i] - s[j])
     return output
 
@@ -381,9 +381,7 @@ def D_operator_reg(a, s):
     return output
 
 
-def D_operator_b_sparse(a):
-    if type(a) is not csr_matrix:
-        raise TypeError("Please use a `csr_matrix` of scipy.sparse.")
+def D_operator_b_sparse(a: csr_matrix):
     n = a.shape[0]
     output = np.zeros(n**2 - n, dtype=np.float64)  # if we avoid the zero rows
     for ind in zip(*a.nonzero(), strict=False):
@@ -392,6 +390,8 @@ def D_operator_b_sparse(a):
             k = n * i + j - i - 1
         elif i > j:
             k = n * i + j - i
+        else:
+            continue
         output[k] = a[ind] ** 0.5
     return output
 

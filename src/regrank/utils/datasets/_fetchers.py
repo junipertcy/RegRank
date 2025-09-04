@@ -3,8 +3,10 @@ from ._registry import registry, registry_urls
 # import networkx as nx
 try:
     import graph_tool.all as gt
-except ModuleNotFoundError:
-    print("We need graph-tool to load the datasets. Please install graph-tool.")
+except ModuleNotFoundError as e:
+    raise ImportError(
+        "We need graph-tool to load the datasets. Please install graph-tool."
+    ) from e
 
 import linecache
 import tempfile

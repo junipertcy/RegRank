@@ -84,8 +84,8 @@ class same_mean_reg(Regularizer):
             0.0 if cp.norm(theta / self.lambd, 1) <= 1 else np.inf
         )  # double check the ord
 
-    def prox(self, theta, t):  # see LinfBall.py
+    def prox(self, t, nu, warm_start, pool):  # see LinfBall.py
         if self.lambd == 0:
             return 0.0
         else:
-            return theta / np.maximum(1, np.abs(theta) / self.lambd)
+            return nu / np.maximum(1, np.abs(nu) / self.lambd)

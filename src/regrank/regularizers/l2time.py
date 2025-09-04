@@ -7,8 +7,8 @@ import graph_tool.all as gt
 from omegaconf import DictConfig
 from scipy.sparse.linalg import lsqr
 
-from ..io import cast2sum_squares_form_t  # Assuming this path is correct
-from .base_regularizer import BaseRegularizer
+from ..utils import cast2sum_squares_form_t
+from . import BaseRegularizer
 
 # Set up a logger for this module
 logger = logging.getLogger(__name__)

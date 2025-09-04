@@ -7,9 +7,8 @@ import graph_tool.all as gt
 import numpy as np
 from omegaconf import DictConfig
 
-from ..core.graph_utils import get_adjacency_from_data
-from ..solvers.optimization import GradientDescentSolver
-from .base_regularizer import BaseRegularizer
+from .. import solvers
+from . import BaseRegularizer
 
 # Set up a logger for this module
 logger = logging.getLogger(__name__)
@@ -27,7 +26,7 @@ class BranchConstrainedRegularizer(BaseRegularizer):
 
     def __init__(self, cfg: DictConfig):
         super().__init__(cfg)
-        self.solver = GradientDescentSolver(cfg.solver)
+        self.solver = solvers.get_solver(cfg.solver)
 
     def fit(self, data: gt.Graph, cfg: DictConfig) -> dict[str, Any]:
         """
@@ -41,7 +40,7 @@ class BranchConstrainedRegularizer(BaseRegularizer):
             A dictionary containing the primal solution (rankings), convergence
             status, final objective value, and constraint analysis.
         """
-        adj = get_adjacency_from_data(data)
+        adj = gt.adjacency(data).T.toarray()
         N = adj.shape[0]
 
         constraints = self._validate_constraints(cfg.regularizer.constraints, N)
@@ -120,9 +119,9 @@ class BranchConstrainedRegularizer(BaseRegularizer):
 
     def _get_initial_solution(self, adj: np.ndarray, alpha: float) -> np.ndarray:
         """Computes a standard SpringRank solution as a warm start."""
-        from ..regularizers.legacy import SpringRankLegacy  # Avoid circular import
+        from .legacy import SpringRankLegacy  # Avoid circular import
 
-        result = SpringRankLegacy().compute_sr(adj, int(alpha))
+        result = SpringRankLegacy().compute_sr(adj, alpha)
         return np.array(result, dtype=float)
 
     def _compute_gradient(
@@ -177,138 +176,4 @@ class BranchConstrainedRegularizer(BaseRegularizer):
                 "violation_magnitude": violation,
                 "satisfied": satisfied,
             })
-        return analysis
-
-    @staticmethod
-    def _update_dict_with_fixed_dc(S, D_in, A):
-        """
-        Updates the dictionary D using a K-SVD-like process, keeping the first
-        atom (DC component) fixed.
-
-        Args:
-            S (np.ndarray): The rank matrix (N, num_signals).
-            D_in (np.ndarray): The current dictionary (N, K).
-            A (np.ndarray): The sparse code matrix (K, num_signals).
-            gamma (float): Reconstruction weight.
-
-        Returns:
-            np.ndarray: The updated dictionary D (N, K).
-        """
-        D = D_in.copy()
-        # Iterate through each atom, skipping the first (DC) atom
-        for k in range(1, D.shape[1]):
-            # Find the signals that use this atom
-            omega_k = np.where(A[k, :] != 0)[0]
-            if len(omega_k) == 0:
-                # Atom is not used, no need to update
-                continue
-
-            # --- K-SVD Update Step ---
-            # 1. Calculate the residual error if this atom were removed.
-            # E_k = S - sum_{j!=k} d_j * a_j
-            D_without_k = np.delete(D, k, axis=1)
-            A_without_k = np.delete(A, k, axis=0)
-            E_k = S - D_without_k @ A_without_k
-
-            # Restrict the error matrix to only the signals that use atom k
-            E_k_restricted = E_k[:, omega_k]
-
-            # 2. Use SVD to find the best replacement for d_k and a_k.
-            # E_k_restricted ≈ d_k * a_k_restricted
-            try:
-                # Perform Singular Value Decomposition
-                u, s_val, vt = np.linalg.svd(E_k_restricted, full_matrices=False)
-
-                # The best rank-1 approximation is the first singular vector/value pair.
-                # Update the dictionary atom d_k with the first left singular vector.
-                d_k_new = u[:, 0]
-
-                # Update the corresponding sparse codes for this atom.
-                a_k_new_restricted = s_val[0] * vt[0, :]
-
-                # Update the dictionary and the sparse code matrix
-                D[:, k] = d_k_new
-                A[k, omega_k] = a_k_new_restricted
-
-            except np.linalg.LinAlgError:
-                # SVD can fail if the residual matrix is zero or ill-conditioned.
-                # In this case, we just skip the update for this atom.
-                continue
-
-        return D, A
-
-    def _evaluate_branch_objective(self, r, L_reg, b_sr, branch_constraints, lambd):
-        """Evaluate objective with overflow protection."""
-        try:
-            # SpringRank term
-            residual = L_reg @ r - b_sr
-            springrank_term = 0.5 * np.dot(residual, residual)
-
-            # Branch constraint penalty terms
-            penalty_term = 0.0
-            for i_m, j_m, d_m in branch_constraints:
-                diff = r[i_m] - r[j_m]
-                violation = max(0, -d_m * diff)
-                penalty_term += violation**2
-
-            total_obj = springrank_term + lambd * penalty_term
-
-            # Return inf if numerical issues
-            if not np.isfinite(total_obj):
-                return np.inf
-
-            return total_obj
-
-        except (OverflowError, FloatingPointError):
-            return np.inf
-
-    def _armijo_line_search(
-        self, r, grad, L_reg, b_sr, branch_constraints, lambd, initial_step
-    ):
-        """Armijo line search for adaptive step sizing."""
-        c1 = 1e-4  # Armijo constant
-        beta = 0.5  # Step reduction factor
-        max_backtracks = 20
-
-        current_obj = self._evaluate_branch_objective(
-            r, L_reg, b_sr, branch_constraints, lambd
-        )
-        grad_norm_sq = np.dot(grad, grad)
-
-        step_size = initial_step
-
-        for _ in range(max_backtracks):
-            r_new = r - step_size * grad
-            r_new = np.clip(r_new, -1e3, 1e3)  # Numerical stability
-
-            new_obj = self._evaluate_branch_objective(
-                r_new, L_reg, b_sr, branch_constraints, lambd
-            )
-
-            # Armijo condition
-            if new_obj <= current_obj - c1 * step_size * grad_norm_sq:
-                return step_size
-
-            step_size *= beta
-
-        return step_size
-
-    def _compute_branch_gradient(self, r, L_reg, b_sr, branch_constraints, lambd):
-        """Compute gradient with numerical stability checks."""
-        # SpringRank gradient
-        grad = L_reg @ r - b_sr
-
-        # Add branch constraint penalty gradients
-        for i_m, j_m, d_m in branch_constraints:
-            diff = r[i_m] - r[j_m]
-            violation = max(0, -d_m * diff)
-
-            if violation > 0:
-                # Gradient of max(0, -d_m * (r_i - r_j))²
-                grad_penalty = -2 * lambd * d_m * violation
-                # Apply with numerical stability
-                if abs(grad_penalty) < 1e6:  # Prevent extremely large gradients
-                    grad[i_m] += grad_penalty
-                    grad[j_m] -= grad_penalty
-
-        return grad
+    return analysis

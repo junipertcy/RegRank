@@ -74,7 +74,7 @@ class legacy_cvx:
 
 
 class huber_cvx:
-    def __init__(self, g, alpha=1, M=1, incl_reg=False):
+    def __init__(self, g, alpha: float = 1.0, M: float = 1.35, incl_reg=False):
         self.g = g
         self.alpha = alpha
         self.M = M

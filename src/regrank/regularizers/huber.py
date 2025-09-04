@@ -10,13 +10,14 @@ from omegaconf import DictConfig
 # CVXPY is a specific dependency for this regularizer
 try:
     import cvxpy as cp
-except ImportError:
-    # This allows the rest of the library to function if cvxpy is not installed,
-    # and only fails when this specific regularizer is used.
-    cp = None
+except ModuleNotFoundError as e:
+    raise ImportError(
+        "We need cvxpy to define the optimization problem. Please install cvxpy."
+    ) from e
 
-from ..io.cvx import huber_cvx  # Assuming cvx problem definitions are in io
-from .base_regularizer import BaseRegularizer
+
+from ..solvers import huber_cvx  # Assuming cvx problem definitions are in solvers
+from . import BaseRegularizer
 
 # Set up a logger for this module
 logger = logging.getLogger(__name__)
@@ -50,6 +51,7 @@ class HuberRegularizer(BaseRegularizer):
             A dictionary containing the primal solution (rankings) and the
             final primal objective value.
         """
+        assert cp is not None, "CVXPY is required for HuberRegularizer"
         if not cfg.regularizer.get("cvxpy", True):
             # This check is for user clarity, as this implementation requires CVXPY.
             raise NotImplementedError(

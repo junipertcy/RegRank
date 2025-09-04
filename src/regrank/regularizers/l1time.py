@@ -7,10 +7,10 @@ import graph_tool.all as gt
 import numpy as np
 from omegaconf import DictConfig
 
-from ..losses import sum_squared_loss_conj
+from ..core import sum_squared_loss_conj
 from ..regularizers import same_mean_reg
-from ..solvers.optimization import gradientDescent
-from .base_regularizer import BaseRegularizer
+from ..solvers import gradientDescent
+from . import BaseRegularizer
 
 # Set up a logger for this module
 logger = logging.getLogger(__name__)
