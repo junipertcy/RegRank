@@ -8,19 +8,6 @@ from regrank.solvers import cp, gradientDescent, same_mean_cvx
 from regrank.utils.graph2mat import compute_ell
 from regrank.utils.stats.experiments import PhDExchange
 
-# import gurobipy as gp
-# HOW TO SUPPRESS GUROBI OUTPUT (Set parameter Username)?
-# unknown.......
-#
-# with gp.Env(empty=True) as env:
-#     env.setParam("OutputFlag", 0)
-#     env.start()
-#     m = gp.Model()
-#     m.Params.LogToConsole = 0
-
-# g = pde.get_data(goi="sector")
-# g = pde.get_data(goi="stabbr")
-
 
 def compute(goi):
     pde = PhDExchange()
@@ -176,7 +163,3 @@ def test_stabbr(mongo_service):
         # actual numerical results to compare.
         assert np.isclose(our_dual, cvx_dual, atol=1e-3).all()
         assert np.isclose(our_dual, cvx_prim, atol=1e-3).all()
-
-
-if __name__ == "__main__":
-    pass

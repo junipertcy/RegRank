@@ -6,6 +6,7 @@ from typing import Any
 import graph_tool.all as gt
 import numpy as np
 from omegaconf import DictConfig
+from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import lsmr
 
 # CVXPY is an optional dependency
@@ -41,7 +42,9 @@ class LegacyRegularizer(BaseRegularizer):
         self.solver_method = cfg.solver_method
         self.legacy_solvers = SpringRankLegacy()
 
-    def fit(self, data: gt.Graph, cfg: DictConfig) -> dict[str, Any]:
+    def fit(
+        self, data: gt.Graph | gt.GraphView | csr_matrix | np.ndarray, cfg: DictConfig
+    ) -> dict[str, Any]:
         """
         Fits the legacy SpringRank model using the configured solver.
 
@@ -70,7 +73,9 @@ class LegacyRegularizer(BaseRegularizer):
 
     # In regrank/regularizers/legacy.py
 
-    def _fit_cvxpy(self, data: gt.Graph, cfg: DictConfig) -> dict[str, Any]:
+    def _fit_cvxpy(
+        self, data: gt.Graph | gt.GraphView | csr_matrix | np.ndarray, cfg: DictConfig
+    ) -> dict[str, Any]:
         """Solves the SpringRank problem using CVXPY."""
         if cp is None:
             raise ImportError("CVXPY is required to use the 'cvxpy' solver.")
@@ -97,13 +102,20 @@ class LegacyRegularizer(BaseRegularizer):
 
         return {"primal": primal, "f_primal": problem.value}
 
-    def _fit_bicgstab(self, data: gt.Graph, cfg: DictConfig) -> dict[str, Any]:
+    def _fit_bicgstab(
+        self, data: gt.Graph | gt.GraphView | csr_matrix | np.ndarray, cfg: DictConfig
+    ) -> dict[str, Any]:
         """Solves the SpringRank problem using direct linear system solvers."""
-        adj = gt.adjacency(data)
+        if isinstance(data, csr_matrix | np.ndarray):
+            adj = data
+        else:
+            adj = gt.adjacency(data)
         ranks = self.legacy_solvers.compute_sr(adj, cfg.alpha)
         return {"primal": ranks.flatten()}
 
-    def _fit_lsmr(self, data: gt.Graph, cfg: DictConfig) -> dict[str, Any]:
+    def _fit_lsmr(
+        self, data: gt.Graph | gt.GraphView | csr_matrix | np.ndarray, cfg: DictConfig
+    ) -> dict[str, Any]:
         """Solves the SpringRank problem by casting it to a least-squares form."""
         B, b = cast2sum_squares_form(data, alpha=cfg.alpha)
         b_array = b.toarray(order="C")

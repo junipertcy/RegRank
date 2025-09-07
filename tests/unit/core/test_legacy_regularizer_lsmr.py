@@ -15,7 +15,6 @@ def test_legacy_regularizer_lsmr():
         "solver": {"verbose": False},
     })
 
-    # FIX: Pass only the 'regularizer' sub-config to the constructor.
     regularizer = LegacyRegularizer(cfg.regularizer)
     graph_data = small_graph()
 
@@ -36,7 +35,6 @@ def test_legacy_regularizer_lsmr_larger_dag():
         "solver": {"verbose": False},
     })
 
-    # FIX: Pass the correct sub-config to the constructor.
     regularizer = LegacyRegularizer(cfg.regularizer)
 
     # The seed ensures the test is reproducible.

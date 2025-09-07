@@ -9,8 +9,12 @@
 # It's often better to just have other files do:
 # from regrank.utils.plotting import plot_hist
 
-from .named_graph import NamedGraph
-from .utils import generate_dag, namedgraph_to_bt_matrix
 from .graph2mat import cast2sum_squares_form_t
+from .named_poset import NamedPoset
+from .utils import generate_dag
 
-__all__ = ["generate_dag", "NamedGraph", "namedgraph_to_bt_matrix"]
+__all__ = [
+	"cast2sum_squares_form_t",
+	"generate_dag",
+	"NamedPoset",
+]

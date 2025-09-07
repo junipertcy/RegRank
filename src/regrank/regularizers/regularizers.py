@@ -41,7 +41,7 @@ class Regularizer:
             "This method is not implemented for the parent class."
         )
 
-    def prox(self, t, nu, warm_start, pool):
+    def prox(self, t, nu, warm_start=None, pool=None):
         raise NotImplementedError(
             "This method is not implemented for the parent class."
         )
@@ -56,7 +56,7 @@ class zero_reg(Regularizer):
     def evaluate(self, theta):
         return 0
 
-    def prox(self, t, nu, warm_start, pool):
+    def prox(self, t, nu, warm_start=None, pool=None):
         return nu
 
 
@@ -84,7 +84,7 @@ class same_mean_reg(Regularizer):
             0.0 if cp.norm(theta / self.lambd, 1) <= 1 else np.inf
         )  # double check the ord
 
-    def prox(self, t, nu, warm_start, pool):  # see LinfBall.py
+    def prox(self, t, nu, warm_start=None, pool=None):  # see LinfBall.py
         if self.lambd == 0:
             return 0.0
         else:

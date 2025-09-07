@@ -171,7 +171,7 @@ def cast2sum_squares_form(data, alpha, regularization=True):  # TODO: this is sl
     """
     if type(data) in [gt.Graph, gt.GraphView]:
         A = gt.adjacency(data)
-    elif type(data) is csc_matrix:
+    elif type(data) in [csc_matrix, csr_matrix, np.ndarray]:
         A = data
 
     # print(f"our method: adj = {A.toarray()[:5,:5]}")

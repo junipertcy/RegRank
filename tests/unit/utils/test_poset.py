@@ -32,8 +32,6 @@ def A_no_relations():
 
 
 # --- Test Functions ---
-
-
 def test_potential_poset_from_adjacency(
     A_simple_cycle, A_acyclic_graph, A_no_relations
 ):
